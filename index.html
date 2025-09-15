@@ -133,11 +133,19 @@ let totalAnswered=0, totalCorrect=0;
 let resultsLog=[]; 
 
 // === ElevenLabs TTS ===
+let currentAudio = null; // хранит текущий звук
+
 async function speakElevenLabs(text) {
   const apiKey = "f3e700c3faf18f37d5b07200c0f83b5d22059752311d8c655afc5e0e8ba1188d";
-  const voiceId = "ErXwobaYiN019PkySvjV"; // можно выбрать другой голос в ElevenLabs
+  const voiceId = "ErXwobaYiN019PkySvjV"; // можно сменить голос на любой другой из ElevenLabs
 
   try {
+    // ⛔ Остановить прошлый звук, если он ещё играет
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
       headers: {
@@ -147,7 +155,7 @@ async function speakElevenLabs(text) {
       },
       body: JSON.stringify({
         text: text,
-        model_id: "eleven_multilingual_v2",
+        model_id: "eleven_multilingual_v2", // поддерживает DE
         voice_settings: { stability: 0.4, similarity_boost: 0.9 }
       })
     });
@@ -156,8 +164,8 @@ async function speakElevenLabs(text) {
 
     const audioData = await response.blob();
     const audioUrl = URL.createObjectURL(audioData);
-    const audio = new Audio(audioUrl);
-    audio.play();
+    currentAudio = new Audio(audioUrl);
+    currentAudio.play();
   } catch (err) {
     console.error("TTS Fehler:", err);
   }
@@ -286,3 +294,4 @@ function updateProgressBar(percent){
 </script>
 </body>
 </html>
+
