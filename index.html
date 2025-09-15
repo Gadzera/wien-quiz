@@ -6,34 +6,30 @@
 <title>Wiener Ortskunde Quiz</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+
 <style>
   body,html { height:100%; margin:0; font-family:sans-serif; }
   #map { height:100%; width:100%; }
   .menu-btn { position:absolute; top:12px; right:12px; z-index:1100;
-              padding:10px 16px; border-radius:8px; background:#2563eb;
-              color:white; font-weight:600; cursor:pointer;
-              box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-  .stats-btn { position:absolute; top:80px; left:12px; z-index:1100;
-              padding:10px 16px; border-radius:8px; background:#16a34a;
-              color:white; font-weight:600; cursor:pointer;
-              box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+              padding:10px 16px; border-radius:8px; color:white; font-weight:600; cursor:pointer; background:#2563eb; }
   .sidebar { position:absolute; top:60px; right:12px; z-index:1000;
-             width:280px; max-height:80vh; overflow-y:auto;
+             width:300px; max-height:80vh; overflow-y:auto;
              background:white; border-radius:12px; padding:12px;
              box-shadow:0 4px 16px rgba(0,0,0,0.15); display:none; }
-  .category { padding:10px; margin:6px 0; border-radius:8px;
-              background:#f8fafc; font-size:14px;
-              border-left:4px solid #2563eb; font-weight:500; cursor:pointer; }
-  .category.disabled { color:#aaa; cursor:not-allowed; opacity:0.6; border-left:4px solid #ccc; }
-  .category:hover:not(.disabled) { background:#e0f2fe; }
+  .category { display:flex; align-items:center; gap:6px; padding:8px; margin:6px 0;
+              border-radius:8px; background:#f8fafc; font-size:14px;
+              border-left:4px solid #2563eb; font-weight:500; }
   .quiz-panel { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
                 z-index:1000; background:white; padding:16px; border-radius:12px;
                 width:90%; max-width:420px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
                 display:none; }
   .question { font-size:15px; font-weight:600; margin-bottom:12px; text-align:center; }
   .progress { font-size:13px; text-align:center; color:#666; margin-bottom:8px; }
-  .progress-bar-container { height:10px; background:#e5e7eb; border-radius:5px; overflow:hidden; margin-bottom:12px; }
-  .progress-bar { height:100%; width:0%; background:#2563eb; transition:width 0.5s; }
   .options { display:grid; gap:6px; }
   .option { padding:10px; border:1px solid #d1d5db; border-radius:8px; cursor:pointer; }
   .option:hover { border-color:#2563eb; background:#f0f9ff; }
@@ -41,257 +37,205 @@
   .option.incorrect { border-color:#dc2626; background:#fef2f2; }
   .next-btn, .end-btn { margin-top:12px; padding:8px 16px; background:#2563eb; color:white;
                         border:none; border-radius:6px; cursor:pointer; width:100%; font-weight:600; }
-  .result-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-                  background:white; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.3);
-                  z-index:2000; display:none; width:90%; max-width:400px; text-align:center; }
-  .result-modal h3 { margin:0 0 8px; }
-  .result-modal small { color:#d97706; font-weight:600; }
+  /* Login modal */
+  #loginModal { position:fixed; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:2000; }
+  #loginBox { background:#f9f9f9; padding:24px; border-radius:8px; width:90%; max-width:360px; text-align:center;
+              box-shadow:0 6px 18px rgba(0,0,0,0.25); }
+  #loginBox h2 { margin:0 0 20px 0; font-size:20px; color:#333; font-weight:600; }
+  #loginBox input { width:100%; padding:12px; margin:10px 0; border:1px solid #ccc; border-radius:6px; font-size:14px; background:#f3f3f3; }
+  #loginBox input:focus { border-color:#2563eb; outline:none; background:#fff; }
+  .login-btn { margin-top:12px; padding:12px; width:100%; border:none; border-radius:6px; background:linear-gradient(to bottom,#ffcc66,#ff9933); color:#333; font-weight:600; cursor:pointer; font-size:15px; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
+  .login-links { margin-top:10px; font-size:13px; }
+  .login-links a { color:#2563eb; text-decoration:none; cursor:pointer; }
 </style>
 </head>
 <body>
 <div id="map"></div>
-
 <div class="menu-btn" onclick="toggleMenu()">Menü</div>
-<div class="stats-btn" onclick="showStats()">📊 Statistik</div>
 
 <div class="sidebar" id="sidebar">
-  <div class="category" onclick="startQuiz('regierungs')">🏛️ Regierungsgebäude</div>
-  <div class="category disabled">⚖️ Gerichtsgebäude</div>
-  <div class="category disabled">👮 Polizei</div>
-  <div class="category disabled">🚉 Post & Verkehr</div>
-  <div class="category disabled">📰 Massenmedien</div>
-  <div class="category disabled">🏢 Kammern</div>
-  <div class="category disabled">🏛️ Bezirksämter</div>
-  <div class="category disabled">🏨 Hotels</div>
-  <div class="category disabled">☕ Kaffeehäuser</div>
-  <div class="category disabled">🍷 Heurigenorte</div>
-  <div class="category disabled">⚰️ Friedhöfe</div>
-  <div class="category disabled">🏥 Krankenanstalten</div>
-  <div class="category disabled">👴 Pensionistenhäuser</div>
-  <div class="category disabled">🎭 Kultur</div>
-  <div class="category disabled">🎤 Kabaretts</div>
-  <div class="category disabled">🎓 Universitäten</div>
-  <div class="category disabled">🏛️ Museen</div>
-  <div class="category disabled">🏨 Hotels & Cafes</div>
-  <div class="category disabled">🛣️ Gürtelquerungen</div>
-  <div class="category disabled">🌉 Donaubrücken</div>
-  <div class="category disabled">🔢 Nummerierungssystem</div>
-  <div class="category disabled">🗺️ Straßengeographie</div>
-  <div class="category disabled">🚗 Autobahnen</div>
+  <label class="category"><input type="checkbox" value="regierungs"> 🏛️ Regierungsgebäude</label>
+  <label class="category"><input type="checkbox" value="gerichte"> ⚖️ Gerichtsgebäude</label>
+  <label class="category">👮 Bundespolizei</label>
+  <label class="category">🚓 Stadtpolizei</label>
+  <label class="category">🚉 Post & Verkehr</label>
+  <label class="category">📰 Massenmedien</label>
+  <label class="category">🏢 Kammern</label>
+  <label class="category">🏛️ Bezirksämter</label>
+  <label class="category">🏨 Hotels</label>
+  <label class="category">☕ Kaffeehäuser</label>
+  <label class="category">🍷 Heurigenorte</label>
+  <label class="category">⚰️ Friedhöfe</label>
+  <label class="category">🏥 Krankenanstalten</label>
+  <label class="category">👴 Pensionistenhäuser</label>
+  <label class="category">🎭 Kultur</label>
+  <label class="category">🎤 Kabaretts</label>
+  <label class="category">🎓 Universitäten</label>
+  <label class="category">🏛️ Museen</label>
+  <label class="category">🛣️ Gürtelquerungen</label>
+  <label class="category">🌉 Donaubrücken</label>
+  <label class="category">🔢 Nummerierungssystem</label>
+  <label class="category">🗺️ Straßengeographie</label>
+  <label class="category">🚗 Autobahnen</label>
+  <button onclick="startMultiQuiz()" style="margin-top:12px; padding:8px; width:100%; background:#2563eb; color:white; border:none; border-radius:6px; font-weight:600;">Quiz starten</button>
 </div>
 
 <div class="quiz-panel" id="quizPanel">
   <div class="progress" id="progress"></div>
-  <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
   <div class="question" id="questionText"></div>
   <div class="options" id="optionsContainer"></div>
   <button class="next-btn" onclick="nextQuestion()" style="display:none;" id="nextBtn">Weiter →</button>
   <div id="endBtns" style="display:none;">
     <button class="end-btn" onclick="restartQuiz()">🔄 Nochmal spielen</button>
-    <button class="end-btn" onclick="backToMenu()">📖 Zurück zum Menü</button>
+    <button class="end-btn" onclick="backToMenu()">📖 Zurück</button>
   </div>
 </div>
 
-<div class="result-modal" id="resultModal">
-  <h3 id="resultTitle"></h3>
-  <small id="resultText"></small>
+<div id="loginModal">
+  <div id="loginBox">
+    <h2 id="formTitle">Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPass" placeholder="Password">
+    <input type="password" id="loginPass2" placeholder="Repeat Password" style="display:none;">
+    <button onclick="submitForm()" class="login-btn" id="submitBtn">Log in</button>
+    <p id="loginError" style="color:red; font-size:12px;"></p>
+    <div class="login-links">
+      <a onclick="toggleForm(true)">Register</a> | 
+      <a onclick="toggleForm(false)">Login</a>
+    </div>
+  </div>
 </div>
 
-<script>
-const quizData = {
-  regierungs: [
-    { name:"Parlament (Nationalrat und Bundesrat)", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correctAnswer:"Dr.-Karl-Renner-Ring 3", district:1, coordinates:[48.208200420886755, 16.35916158251087] },
-    { name:"Bundespräsident (Präsidentschaftskanzlei)", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Ballhausplatz 1", district:1, coordinates:[48.20800169709753, 16.363951691458396] },
-    { name:"Bundeskanzleramt", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correctAnswer:"Ballhausplatz 2", district:1, coordinates:[48.20854761977208, 16.363727653675692] },
-    { name:"Bundesministerium für Inneres", options:["Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2"], correctAnswer:"Herrengasse 7", district:1, coordinates:[48.20925481780634, 16.365909640181602] },
-    { name:"Bundesministerium für Europäische und Internationale Angelegenheiten", options:["Minoritenplatz 8","Dr.-Karl-Renner-Ring 3","Radetzkystraße 2","Ballhausplatz 1"], correctAnswer:"Minoritenplatz 8", district:1, coordinates:[48.209476268473004, 16.364686524840423] },
-    { name:"Bundesministerium für Bildung, Wissenschaft und Forschung", options:["Minoritenplatz 5","Herrengasse 7","Museumstraße 7","Johannesgasse 5"], correctAnswer:"Minoritenplatz 5", district:1, coordinates:[48.21005255130992, 16.36359571996366] },
-    { name:"Bundesministerium für Digitalisierung und Wirtschaftsstandort", options:["Stubenring 1","Roßauer Lände 1","Ballhausplatz 2","Museumstraße 7"], correctAnswer:"Stubenring 1", district:1, coordinates:[48.21004291602488, 16.38297064202857] },
-    { name:"Bundesministerium für Arbeit", options:["Taborstraße 1-3","Minoritenplatz 8","Dr.-Karl-Renner-Ring 3","Radetzkystraße 2"], correctAnswer:"Taborstraße 1-3", district:2, coordinates:[48.213122753010396, 16.379013197852277] },
-    { name:"Bundesministerium für Finanzen", options:["Johannesgasse 5","Ballhausplatz 1","Stubenring 1","Museumstraße 7"], correctAnswer:"Johannesgasse 5", district:1, coordinates:[48.205323477367855, 16.37220709785196] },
-    { name:"Bundesministerium für Klimaschutz, Umwelt, Energie, Mobilität, Innovation und Technologie", options:["Radetzkystraße 2","Stubenring 1","Roßauer Lände 1","Herrengasse 7"], correctAnswer:"Radetzkystraße 2", district:3, coordinates:[48.21119280876316, 16.38638176901679] },
-    { name:"Bundesministerium für Kunst, Kultur, öffentlichen Dienst und Sport", options:["Radetzkystraße 2","Johannesgasse 5","Dr.-Karl-Renner-Ring 3","Minoritenplatz 5"], correctAnswer:"Radetzkystraße 2", district:3, coordinates:[48.21108976120188, 16.386582797852217] },
-    { name:"Bundesministerium für Landwirtschaft, Regionen und Tourismus", options:["Stubenring 1","Ballhausplatz 2","Roßauer Lände 1","Museumstraße 7"], correctAnswer:"Stubenring 1", district:1, coordinates:[48.21017215942227, 16.383023597852194] },
-    { name:"Bundesministerium für Soziales, Gesundheit, Pflege und Konsumentenschutz", options:["Stubenring 1","Minoritenplatz 8","Johannesgasse 5","Ballhausplatz 1"], correctAnswer:"Stubenring 1", district:1, coordinates:[48.20979016335292, 16.382849297852154] },
-    { name:"Bundesministerium für Justiz", options:["Museumstraße 7","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Museumstraße 7", district:7, coordinates:[48.20581717886796, 16.355142309499076] },
-    { name:"Bundesministerium für Landesverteidigung", options:["Roßauer Lände 1","Ballhausplatz 2","Stubenring 1","Johannesgasse 5"], correctAnswer:"Roßauer Lände 1", district:9, coordinates:[48.219309896635856, 16.36798294387597] },
-    { name:"Rathaus (Landtag, Landesregierung und Gemeinde Wien)", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8"], correctAnswer:"Rathausplatz 1", district:1, coordinates:[48.21110695472529, 16.358082597852153] }
-  ]
+<script type="module">
+// --- Firebase ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqVNV0XqYlPYryEjYlKyp3bMrRM1lGg",
+  authDomain: "wien-quiz.firebaseapp.com",
+  databaseURL: "https://wien-quiz-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wien-quiz",
+  storageBucket: "wien-quiz.appspot.com",
+  messagingSenderId: "467695563938",
+  appId: "1:467695563938:web:87b15a9b5de5d3764bd3fb",
+  measurementId: "G-SN0SMY9NH2"
 };
 
-const map = L.map('map').setView([48.2082,16.3738],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© OpenStreetMap contributors'
-}).addTo(map);
 
-const greenIcon = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
-const redIcon   = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
-const blueIcon  = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-let currentSession=null, answerMarkers=[], questionMarker=null;
-let totalAnswered=0, totalCorrect=0;
-let resultsLog=[]; 
+// --- Quiz Fragen ---
+const quizData = {
+  regierungs: [
+    { name:"Parlament (Nationalrat und Bundesrat)", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correctAnswer:"Dr.-Karl-Renner-Ring 3", coordinates:[48.208200420886755, 16.35916158251087] },
+    { name:"Bundespräsident (Präsidentschaftskanzlei)", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Ballhausplatz 1", coordinates:[48.20800169709753, 16.363951691458396] },
+    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correctAnswer:"Ballhausplatz 2", coordinates:[48.20854761977208, 16.363727653675692] },
+    { name:"BM für Inneres", question:"Wo befindet sich das BM für Inneres?", options:["Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2"], correctAnswer:"Herrengasse 7", coordinates:[48.20925481780634, 16.365909640181602] },
+    { name:"BM für Europäische und Internationale Angelegenheiten", question:"Wo befindet sich das BM für Europäische und Internationale Angelegenheiten?", options:["Minoritenplatz 8","Dr.-Karl-Renner-Ring 3","Radetzkystraße 2","Ballhausplatz 1"], correctAnswer:"Minoritenplatz 8", coordinates:[48.209476268473004, 16.364686524840423] },
+    { name:"BM für Bildung, Wissenschaft und Forschung", question:"Wo befindet sich das BM für Bildung, Wissenschaft und Forschung?", options:["Minoritenplatz 5","Herrengasse 7","Museumstraße 7","Johannesgasse 5"], correctAnswer:"Minoritenplatz 5", coordinates:[48.21005255130992, 16.36359571996366] },
+    { name:"BM für Digitalisierung und Wirtschaftsstandort", question:"Wo befindet sich das BM für Digitalisierung und Wirtschaftsstandort?", options:["Stubenring 1","Roßauer Lände 1","Ballhausplatz 2","Museumstraße 7"], correctAnswer:"Stubenring 1", coordinates:[48.21004291602488, 16.38297064202857] },
+    { name:"BM für Arbeit", question:"Wo befindet sich das BM für Arbeit?", options:["Taborstraße 1-3","Minoritenplatz 8","Dr.-Karl-Renner-Ring 3","Radetzkystraße 2"], correctAnswer:"Taborstraße 1-3", coordinates:[48.213122753010396, 16.379013197852277] },
+    { name:"BM für Finanzen", question:"Wo befindet sich das BM für Finanzen?", options:["Johannesgasse 5","Ballhausplatz 1","Stubenring 1","Museumstraße 7"], correctAnswer:"Johannesgasse 5", coordinates:[48.205323477367855, 16.37220709785196] },
+    { name:"BM für Klimaschutz, Umwelt, Energie, Mobilität, Innovation und Technologie", question:"Wo befindet sich das BM für Klimaschutz, Umwelt, Energie, Mobilität, Innovation und Technologie?", options:["Radetzkystraße 2","Stubenring 1","Roßauer Lände 1","Herrengasse 7"], correctAnswer:"Radetzkystraße 2", coordinates:[48.21119280876316, 16.38638176901679] },
+    { name:"BM für Kunst, Kultur, öffentlichen Dienst und Sport", question:"Wo befindet sich das BM für Kunst, Kultur, öffentlichen Dienst und Sport?", options:["Radetzkystraße 2","Johannesgasse 5","Dr.-Karl-Renner-Ring 3","Minoritenplatz 5"], correctAnswer:"Radetzkystraße 2", coordinates:[48.21108976120188, 16.386582797852217] },
+    { name:"BM für Landwirtschaft, Regionen und Tourismus", question:"Wo befindet sich das BM für Landwirtschaft, Regionen und Tourismus?", options:["Stubenring 1","Ballhausplatz 2","Roßauer Lände 1","Museumstraße 7"], correctAnswer:"Stubenring 1", coordinates:[48.21017215942227, 16.383023597852194] },
+    { name:"BM für Soziales, Gesundheit, Pflege und Konsumentenschutz", question:"Wo befindet sich das BM für Soziales, Gesundheit, Pflege und Konsumentenschutz?", options:["Stubenring 1","Minoritenplatz 8","Johannesgasse 5","Ballhausplatz 1"], correctAnswer:"Stubenring 1", coordinates:[48.20979016335292, 16.382849297852154] },
+    { name:"BM für Justiz", question:"Wo befindet sich das BM für Justiz?", options:["Museumstraße 7","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Museumstraße 7", coordinates:[48.20581717886796, 16.355142309499076] },
+    { name:"BM für Landesverteidigung", question:"Wo befindet sich das BM für Landesverteidigung?", options:["Roßauer Lände 1","Ballhausplatz 2","Stubenring 1","Johannesgasse 5"], correctAnswer:"Roßauer Lände 1", coordinates:[48.219309896635856, 16.36798294387597] },
+    { name:"Rathaus", question:"Wo befindet sich das Wiener Rathaus?", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8"], correctAnswer:"Rathausplatz 1", coordinates:[48.21110695472529, 16.358082597852153] }
+  ],
+  gerichte: [
+    { name:"Verfassungsgerichtshof", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["Freyung 8","Judenplatz 11","Schmerlingplatz 10-11","Stubenring 1"], correctAnswer:"Freyung 8", coordinates:[48.210,16.364] },
+    { name:"Verwaltungsgerichtshof", question:"Wo befindet sich der Verwaltungsgerichtshof?", options:["Judenplatz 11","Freyung 8","Stubenring 1","Ballhausplatz 2"], correctAnswer:"Judenplatz 11", coordinates:[48.211,16.369] },
+    { name:"Oberster Gerichtshof", question:"Wo befindet sich der Oberste Gerichtshof?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Herrengasse 7","Ballhausplatz 1"], correctAnswer:"Schmerlingplatz 10-11", coordinates:[48.207,16.357] },
+    { name:"Oberlandesgericht Wien", question:"Wo befindet sich das Oberlandesgericht Wien?", options:["Schmerlingplatz 10-11","Freyung 8","Judenplatz 11","Ballhausplatz 1"], correctAnswer:"Schmerlingplatz 10-11", coordinates:[48.207,16.357] },
+    { name:"Oberstaatsanwaltschaft Wien", question:"Wo befindet sich die Oberstaatsanwaltschaft Wien?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Stubenring 1","Radetzkystraße 2"], correctAnswer:"Schmerlingplatz 10-11", coordinates:[48.207,16.357] },
+    { name:"Landesgericht f. Zivilrechtssachen", question:"Wo befindet sich das Landesgericht für Zivilrechtssachen Wien?", options:["Schmerlingplatz 10-11","Judenplatz 11","Freyung 8","Dampfschiffstraße 2"], correctAnswer:"Schmerlingplatz 10-11", coordinates:[48.207,16.357] },
+    { name:"Landesgericht f. Strafsachen", question:"Wo befindet sich das Landesgericht für Strafsachen?", options:["Landesgerichtsstraße 11","Schmerlingplatz 10-11","Herrengasse 7","Johannesgasse 5"], correctAnswer:"Landesgerichtsstraße 11", coordinates:[48.215,16.350] },
+    { name:"Justizanstalt Wien Josefstadt", question:"Wo befindet sich die Justizanstalt Wien Josefstadt?", options:["Wickenburggasse 18-20","Landesgerichtsstraße 11","Schmerlingplatz 10-11","Stubenring 1"], correctAnswer:"Wickenburggasse 18-20", coordinates:[48.214,16.342] },
+    { name:"Justiz-Zentrum Wien Mitte", question:"Wo befindet sich das Justiz-Zentrum Wien Mitte?", options:["Marxergasse 1a","Althanstraße 39-45","Schmerlingplatz 10-11","Stubenring 1"], correctAnswer:"Marxergasse 1a", coordinates:[48.206,16.390] },
+    { name:"Arbeits- und Sozialgericht Wien", question:"Wo befindet sich das Arbeits- und Sozialgericht Wien?", options:["Althanstraße 39-45","Marxergasse 1a","Hernalser Gürtel 6-12","Stubenring 1"], correctAnswer:"Althanstraße 39-45", coordinates:[48.223,16.358] },
+    { name:"Landesgerichtliches Gefangenenhaus II", question:"Wo befindet sich das Landesgerichtliches Gefangenenhaus II?", options:["Hernalser Gürtel 6-12","Wickenburggasse 18-20","Marxergasse 1a","Dr.-Karl-Renner-Ring 3"], correctAnswer:"Hernalser Gürtel 6-12", coordinates:[48.220,16.338] },
+    { name:"Rechnungshof", question:"Wo befindet sich der Rechnungshof?", options:["Dampfschiffstraße 2","Judenplatz 11","Schmerlingplatz 10-11","Landesgerichtsstraße 11"], correctAnswer:"Dampfschiffstraße 2", coordinates:[48.207,16.392] }
+  ],
+  bundespolizei: [],
+  stadtpolizei: [],
+  post: [],
+  medien: [],
+  kammern: [],
+  bezirksaemter: [],
+  hotels: [],
+  cafes: [],
+  heurige: [],
+  friedhoefe: [],
+  kranken: [],
+  pension: [],
+  kultur: [],
+  kabarett: [],
+  unis: [],
+  museen: [],
+  guertel: [],
+  bruecken: [],
+  nummern: [],
+  strassen: [],
+  autobahnen: []
+};
 
-// === ElevenLabs TTS ===
-let currentAudio = null; // хранит текущий звук
+// --- Login/Register ---
+let isRegister = false;
+function toggleForm(register=false){
+  isRegister = register;
+  document.getElementById("formTitle").textContent = register ? "Register" : "Login";
+  document.getElementById("loginPass2").style.display = register ? "block" : "none";
+  document.getElementById("submitBtn").textContent = register ? "Register" : "Log in";
+}
+window.toggleForm = toggleForm;
 
-async function speakElevenLabs(text) {
-  const apiKey = "f3e700c3faf18f37d5b07200c0f83b5d22059752311d8c655afc5e0e8ba1188d";
-  const voiceId = "ErXwobaYiN019PkySvjV"; // можно сменить голос на любой другой из ElevenLabs
+async function submitForm(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass1 = document.getElementById("loginPass").value.trim();
+  const pass2 = document.getElementById("loginPass2").value.trim();
 
   try {
-    // ⛔ Остановить прошлый звук, если он ещё играет
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio = null;
+    if(isRegister){
+      if(pass1 !== pass2){
+        document.getElementById("loginError").textContent = "Passwords do not match!";
+        return;
+      }
+      await createUserWithEmailAndPassword(auth, email, pass1);
+      alert("✅ Registration successful!");
+    } else {
+      await signInWithEmailAndPassword(auth, email, pass1);
+      alert("✅ Login successful!");
     }
-
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: "POST",
-      headers: {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": apiKey
-      },
-      body: JSON.stringify({
-        text: text,
-        model_id: "eleven_multilingual_v2", // поддерживает DE
-        voice_settings: { stability: 0.4, similarity_boost: 0.9 }
-      })
-    });
-
-    if (!response.ok) throw new Error("ElevenLabs API Fehler");
-
-    const audioData = await response.blob();
-    const audioUrl = URL.createObjectURL(audioData);
-    currentAudio = new Audio(audioUrl);
-    currentAudio.play();
-  } catch (err) {
-    console.error("TTS Fehler:", err);
+    document.getElementById("loginModal").style.display = "none";
+  } catch(err){
+    document.getElementById("loginError").textContent = "⚠️ " + err.message;
   }
 }
+window.submitForm = submitForm;
 
+// --- Leaflet Map ---
+const map = L.map('map').setView([48.2082,16.3738],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+
+// --- Sidebar Toggle ---
 function toggleMenu(){
-  if(currentSession){ alert("Quiz läuft – Menü gesperrt."); return; }
-  const sb=document.getElementById('sidebar');
-  sb.style.display= sb.style.display==="block"?"none":"block";
+  const s = document.getElementById("sidebar");
+  s.style.display = (s.style.display === "block") ? "none" : "block";
 }
+window.toggleMenu = toggleMenu;
 
-function startQuiz(category){
-  const questions = quizData[category];
-  if(!questions || questions.length===0){ alert("Noch keine Fragen."); return; }
-  answerMarkers.forEach(m => map.removeLayer(m)); answerMarkers = [];
-  if(questionMarker){ map.removeLayer(questionMarker); }
-  currentSession = { category, questions:shuffle([...questions]), currentIndex:0, score:0 };
-  totalAnswered=0; totalCorrect=0; resultsLog=[];
-  document.getElementById('sidebar').style.display = 'none';
-  showQuestion();
+function startMultiQuiz(){
+  document.getElementById("quizPanel").style.display = "block";
+  document.getElementById("sidebar").style.display = "none";
 }
-
-function showQuestion(){
-  const {questions, currentIndex} = currentSession;
-  const q = questions[currentIndex];
-  document.getElementById('questionText').textContent = q.name;
-  document.getElementById('progress').textContent = `Frage ${currentIndex+1}/${questions.length}`;
-  updateProgressBar((currentIndex)/questions.length*100);
-
-  const opts = document.getElementById('optionsContainer');
-  opts.innerHTML = '';
-  shuffle([...q.options]).forEach(opt=>{
-    const el = document.createElement('div');
-    el.className = 'option';
-    el.textContent = opt;
-    el.onclick = ()=>checkAnswer(opt, q);
-    opts.appendChild(el);
-  });
-
-  if(questionMarker){ map.removeLayer(questionMarker); }
-  questionMarker = L.marker(q.coordinates,{icon:blueIcon}).addTo(map);
-  map.flyTo(q.coordinates, 16, { duration:1 });
-  document.getElementById('quizPanel').style.display = 'block';
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('endBtns').style.display = 'none';
-
-  speakElevenLabs("Wo befindet sich " + q.name + "?");
-}
-
-function checkAnswer(sel, q){
-  const isCorrect = sel === q.correctAnswer;
-  if(isCorrect){ currentSession.score++; totalCorrect++; }
-  totalAnswered++;
-  resultsLog.push({name:q.name, correct:isCorrect, answer:q.correctAnswer});
-
-  document.querySelectorAll('.option').forEach(opt=>{
-    opt.style.pointerEvents = 'none';
-    if(opt.textContent === q.correctAnswer) opt.classList.add('correct');
-    else if(opt.textContent === sel) opt.classList.add('incorrect');
-  });
-  map.removeLayer(questionMarker);
-  const finalMarker = L.marker(q.coordinates, { icon: isCorrect ? greenIcon : redIcon }).addTo(map);
-  answerMarkers.push(finalMarker);
-
-  document.getElementById('resultTitle').textContent = q.name;
-  document.getElementById('resultText').textContent = `${q.correctAnswer}, ${q.district}. Bezirk`;
-  document.getElementById('resultModal').style.display="block";
-  document.getElementById('nextBtn').style.display = 'block';
-
-  if(isCorrect){
-    speakElevenLabs("Richtig! " + q.name + ". Adresse: " + q.correctAnswer + ", " + q.district + ". Bezirk.");
-  } else {
-    speakElevenLabs("Falsch. Richtig ist: " + q.name + ". Adresse: " + q.correctAnswer + ", " + q.district + ". Bezirk.");
-  }
-}
-
-function nextQuestion(){
-  document.getElementById('resultModal').style.display="none";
-  currentSession.currentIndex++;
-  if(currentSession.currentIndex >= currentSession.questions.length) {
-    endQuiz();
-  } else {
-    showQuestion();
-  }
-}
-
-function endQuiz(){
-  const total = currentSession.questions.length;
-  const correct = currentSession.score;
-  const percent = Math.round((correct/total)*100);
-  updateProgressBar(100);
-  let msg = percent>=80 ? "🎉 Super!" : percent>=50 ? "👍 Gut gemacht!" : "💡 Übe weiter!";
-  document.getElementById('optionsContainer').innerHTML =
-    `<p style="text-align:center; font-size:16px; font-weight:600;">
-       ${msg}<br><br>
-       Ergebnis: ${correct}/${total} richtig (${percent}%)
-     </p>`;
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('endBtns').style.display = 'block';
-  currentSession = null;
-}
-
-function restartQuiz(){ startQuiz('regierungs'); }
-function backToMenu(){ document.getElementById('quizPanel').style.display = 'none'; document.getElementById('sidebar').style.display = 'block'; }
-
-function showStats(){
-  if(resultsLog.length===0){ alert("Noch keine Statistik."); return; }
-  let text=`📊 Statistik:\nAntworten: ${totalAnswered}\nRichtig: ${totalCorrect}\nFalsch: ${totalAnswered-totalCorrect}\nQuote: ${totalAnswered? Math.round(totalCorrect/totalAnswered*100):0}%\n\nDetails:\n`;
-  resultsLog.forEach(r=>{
-    text+= (r.correct?"✅":"❌")+" "+r.name+" → "+r.answer+"\n";
-  });
-  alert(text);
-}
-
-function shuffle(arr){
-  for(let i = arr.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function updateProgressBar(percent){
-  document.getElementById('progressBar').style.width = percent+"%";
-}
+window.startMultiQuiz = startMultiQuiz;
 </script>
 </body>
 </html>
+
 
