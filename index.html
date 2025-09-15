@@ -113,16 +113,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCqVNV0XqYlPYryEjYlKyp3bMrRM1lGg",
+  apiKey: "AIzaSyCqVNVOXqYlPryEvjIYkOyp3BrWMtRMlGg",
   authDomain: "wien-quiz.firebaseapp.com",
   databaseURL: "https://wien-quiz-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "wien-quiz",
-  storageBucket: "wien-quiz.appspot.com",
+  storageBucket: "wien-quiz.firebasestorage.app",
   messagingSenderId: "467695563938",
   appId: "1:467695563938:web:87b15a9b5de5d3764bd3fb",
   measurementId: "G-SN0SMY9NH2"
 };
-
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -237,5 +236,6 @@ window.startMultiQuiz = startMultiQuiz;
 </script>
 </body>
 </html>
+
 
 
