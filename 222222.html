@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wiener Ortskunde Quiz</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  body,html { height:100%; margin:0; font-family:sans-serif; }
+  #map { height:100%; width:100%; }
+  .menu-btn { position:absolute; top:12px; right:12px; z-index:1100;
+              padding:10px 16px; border-radius:8px; background:#2563eb;
+              color:white; font-weight:600; cursor:pointer;
+              box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+  .stats-btn { position:absolute; top:80px; left:12px; z-index:1100;
+              padding:10px 16px; border-radius:8px; background:#16a34a;
+              color:white; font-weight:600; cursor:pointer;
+              box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar { position:absolute; top:60px; right:12px; z-index:1000;
+             width:280px; max-height:80vh; overflow-y:auto;
+             background:white; border-radius:12px; padding:12px;
+             box-shadow:0 4px 16px rgba(0,0,0,0.15); display:none; }
+  .category { padding:10px; margin:6px 0; border-radius:8px;
+              background:#f8fafc; font-size:14px;
+              border-left:4px solid #2563eb; font-weight:500; cursor:pointer; }
+  .category.disabled { color:#aaa; cursor:not-allowed; opacity:0.6; border-left:4px solid #ccc; }
+  .category:hover:not(.disabled) { background:#e0f2fe; }
+  .quiz-panel { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+                z-index:1000; background:white; padding:16px; border-radius:12px;
+                width:90%; max-width:420px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+                display:none; }
+  .question { font-size:15px; font-weight:600; margin-bottom:12px; text-align:center; }
+  .progress { font-size:13px; text-align:center; color:#666; margin-bottom:8px; }
+  .progress-bar-container { height:10px; background:#e5e7eb; border-radius:5px; overflow:hidden; margin-bottom:12px; }
+  .progress-bar { height:100%; width:0%; background:#2563eb; transition:width 0.5s; }
+  .options { display:grid; gap:6px; }
+  .option { padding:10px; border:1px solid #d1d5db; border-radius:8px; cursor:pointer; }
+  .option:hover { border-color:#2563eb; background:#f0f9ff; }
+  .option.correct { border-color:#16a34a; background:#f0fdf4; }
+  .option.incorrect { border-color:#dc2626; background:#fef2f2; }
+  .next-btn, .end-btn { margin-top:12px; padding:8px 16px; background:#2563eb; color:white;
+                        border:none; border-radius:6px; cursor:pointer; width:100%; font-weight:600; }
+  /* Модальное окно результата */
+  .result-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+                  background:white; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.3);
+                  z-index:2000; display:none; width:90%; max-width:400px; text-align:center; }
+  .result-modal h3 { margin:0 0 8px; }
+  .result-modal small { color:#d97706; font-weight:600; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- кнопки -->
+<div class="menu-btn" onclick="toggleMenu()">Menü</div>
+<div class="stats-btn" onclick="showStats()">📊 Statistik</div>
+
+<!-- боковое меню -->
+<div class="sidebar" id="sidebar">
+  <div class="category" onclick="startQuiz('regierungs')">🏛️ Regierungsgebäude</div>
+  <div class="category disabled">⚖️ Gerichtsgebäude</div>
+  <div class="category disabled">👮 Polizei</div>
+  <div class="category disabled">🚉 Post & Verkehr</div>
+  <div class="category disabled">📰 Massenmedien</div>
+  <div class="category disabled">🏢 Kammern</div>
+  <div class="category disabled">🏛️ Bezirksämter</div>
+  <div class="category disabled">🏨 Hotels</div>
+  <div class="category disabled">☕ Kaffeehäuser</div>
+  <div class="category disabled">🍷 Heurigenorte</div>
+  <div class="category disabled">⚰️ Friedhöfe</div>
+  <div class="category disabled">🏥 Krankenanstalten</div>
+  <div class="category disabled">👴 Pensionistenhäuser</div>
+  <div class="category disabled">🎭 Kultur</div>
+  <div class="category disabled">🎤 Kabaretts</div>
+  <div class="category disabled">🎓 Universitäten</div>
+  <div class="category disabled">🏛️ Museen</div>
+  <div class="category disabled">🏨 Hotels & Cafes</div>
+  <div class="category disabled">🛣️ Gürtelquerungen</div>
+  <div class="category disabled">🌉 Donaubrücken</div>
+  <div class="category disabled">🔢 Nummerierungssystem</div>
+  <div class="category disabled">🗺️ Straßengeographie</div>
+  <div class="category disabled">🚗 Autobahnen</div>
+</div>
+
+<!-- панель викторины -->
+<div class="quiz-panel" id="quizPanel">
+  <div class="progress" id="progress"></div>
+  <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="question" id="questionText"></div>
+  <div class="options" id="optionsContainer"></div>
+  <button class="next-btn" onclick="nextQuestion()" style="display:none;" id="nextBtn">Weiter →</button>
+  <div id="endBtns" style="display:none;">
+    <button class="end-btn" onclick="restartQuiz()">🔄 Nochmal spielen</button>
+    <button class="end-btn" onclick="backToMenu()">📖 Zurück zum Menü</button>
+  </div>
+</div>
+
+<!-- модальное окно -->
+<div class="result-modal" id="resultModal">
+  <h3 id="resultTitle"></h3>
+  <small id="resultText"></small>
+</div>
+
+<script>
+const quizData = {
+  regierungs: [
+    { name:"Parlament (Nationalrat und Bundesrat)", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correctAnswer:"Dr.-Karl-Renner-Ring 3", district:1, coordinates:[48.208200420886755, 16.35916158251087] },
+    { name:"Bundespräsident (Präsidentschaftskanzlei)", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Ballhausplatz 1", district:1, coordinates:[48.20800169709753, 16.363951691458396] },
+    { name:"Bundeskanzleramt", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correctAnswer:"Ballhausplatz 2", district:1, coordinates:[48.20854761977208, 16.363727653675692] }
+    // ... остальные
+  ]
+};
+
+const map = L.map('map').setView([48.2082,16.3738],13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+
+const greenIcon = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
+const redIcon   = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
+const blueIcon  = L.icon({ iconUrl:'https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png', iconSize:[32,32], iconAnchor:[16,32] });
+
+let currentSession=null, answerMarkers=[], questionMarker=null;
+let totalAnswered=0, totalCorrect=0;
+let resultsLog=[]; 
+
+function toggleMenu(){
+  if(currentSession){ alert("Quiz läuft – Menü gesperrt."); return; }
+  const sb=document.getElementById('sidebar');
+  sb.style.display= sb.style.display==="block"?"none":"block";
+}
+
+function startQuiz(category){
+  const questions = quizData[category];
+  if(!questions || questions.length===0){ alert("Noch keine Fragen."); return; }
+  answerMarkers.forEach(m => map.removeLayer(m)); answerMarkers = [];
+  if(questionMarker){ map.removeLayer(questionMarker); }
+  currentSession = { category, questions:shuffle([...questions]), currentIndex:0, score:0 };
+  totalAnswered=0; totalCorrect=0; resultsLog=[];
+  document.getElementById('sidebar').style.display = 'none';
+  showQuestion();
+}
+
+function showQuestion(){
+  const {questions, currentIndex} = currentSession;
+  const q = questions[currentIndex];
+  document.getElementById('questionText').textContent = q.name;
+  document.getElementById('progress').textContent = `Frage ${currentIndex+1}/${questions.length}`;
+  updateProgressBar((currentIndex)/questions.length*100);
+
+  const opts = document.getElementById('optionsContainer');
+  opts.innerHTML = '';
+  shuffle([...q.options]).forEach(opt=>{
+    const el = document.createElement('div');
+    el.className = 'option';
+    el.textContent = opt;
+    el.onclick = ()=>checkAnswer(opt, q);
+    opts.appendChild(el);
+  });
+
+  if(questionMarker){ map.removeLayer(questionMarker); }
+  questionMarker = L.marker(q.coordinates,{icon:blueIcon}).addTo(map);
+  map.flyTo(q.coordinates, 16, { duration:1 });
+  document.getElementById('quizPanel').style.display = 'block';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('endBtns').style.display = 'none';
+
+  speakQuestion(q.name);
+}
+
+function checkAnswer(sel, q){
+  const isCorrect = sel === q.correctAnswer;
+  if(isCorrect){ currentSession.score++; totalCorrect++; }
+  totalAnswered++;
+  resultsLog.push({name:q.name, correct:isCorrect, answer:q.correctAnswer});
+
+  document.querySelectorAll('.option').forEach(opt=>{
+    opt.style.pointerEvents = 'none';
+    if(opt.textContent === q.correctAnswer) opt.classList.add('correct');
+    else if(opt.textContent === sel) opt.classList.add('incorrect');
+  });
+  map.removeLayer(questionMarker);
+  const finalMarker = L.marker(q.coordinates, { icon: isCorrect ? greenIcon : redIcon }).addTo(map);
+  answerMarkers.push(finalMarker);
+
+  document.getElementById('resultTitle').textContent = q.name;
+  document.getElementById('resultText').textContent = `${q.correctAnswer}, ${q.district}. Bezirk`;
+  document.getElementById('resultModal').style.display="block";
+  document.getElementById('nextBtn').style.display = 'block';
+
+  speakResult(q, isCorrect);
+}
+
+function nextQuestion(){
+  document.getElementById('resultModal').style.display="none";
+  currentSession.currentIndex++;
+  if(currentSession.currentIndex >= currentSession.questions.length) {
+    endQuiz();
+  } else {
+    showQuestion();
+  }
+}
+
+function endQuiz(){
+  const total = currentSession.questions.length;
+  const correct = currentSession.score;
+  const percent = Math.round((correct/total)*100);
+  updateProgressBar(100);
+  let msg = percent>=80 ? "🎉 Super!" : percent>=50 ? "👍 Gut gemacht!" : "💡 Übe weiter!";
+  document.getElementById('optionsContainer').innerHTML =
+    `<p style="text-align:center; font-size:16px; font-weight:600;">
+       ${msg}<br><br>
+       Ergebnis: ${correct}/${total} richtig (${percent}%)
+     </p>`;
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('endBtns').style.display = 'block';
+  currentSession = null;
+}
+
+function restartQuiz(){ startQuiz('regierungs'); }
+function backToMenu(){ document.getElementById('quizPanel').style.display = 'none'; document.getElementById('sidebar').style.display = 'block'; }
+
+function showStats(){
+  if(resultsLog.length===0){ alert("Noch keine Statistik."); return; }
+  let text=`📊 Statistik:\nAntworten: ${totalAnswered}\nRichtig: ${totalCorrect}\nFalsch: ${totalAnswered-totalCorrect}\nQuote: ${totalAnswered? Math.round(totalCorrect/totalAnswered*100):0}%\n\nDetails:\n`;
+  resultsLog.forEach(r=>{
+    text+= (r.correct?"✅":"❌")+" "+r.name+" → "+r.answer+"\n";
+  });
+  alert(text);
+}
+
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function updateProgressBar(percent){
+  document.getElementById('progressBar').style.width = percent+"%";
+}
+
+// === озвучка вопроса ===
+function speakQuestion(name){
+  if('speechSynthesis' in window){
+    let voices = speechSynthesis.getVoices();
+    let voice = voices.find(v => v.lang.startsWith("de") && (v.name.includes("Google") || v.name.includes("Katja"))) 
+              || voices.find(v => v.lang.startsWith("de")) || null;
+
+    const msg = new SpeechSynthesisUtterance("Wo befindet sich " + name + "?");
+    msg.lang = 'de-DE';
+    msg.rate = 0.9;
+    if(voice) msg.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
+  }
+}
+
+// === озвучка результата ===
+function speakResult(q, isCorrect){
+  if('speechSynthesis' in window){
+    let voices = speechSynthesis.getVoices();
+    let voice = voices.find(v => v.lang.startsWith("de") && (v.name.includes("Google") || v.name.includes("Katja"))) 
+              || voices.find(v => v.lang.startsWith("de")) || null;
+
+    let text = "";
+    if(isCorrect){
+      text = "Richtig! " + q.name + ". Adresse: " + q.correctAnswer + ", " + q.district + ". Bezirk.";
+    } else {
+      text = "Falsch. Richtig ist: " + q.name + ". Adresse: " + q.correctAnswer + ", " + q.district + ". Bezirk.";
+    }
+
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'de-DE';
+    msg.rate = 0.9;
+    if(voice) msg.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
+  }
+}
+</script>
+</body>
+</html>
