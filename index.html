@@ -7,16 +7,13 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-
 <style>
   body,html { height:100%; margin:0; font-family:sans-serif; }
   #map { height:100%; width:100%; }
+
   .menu-btn { position:absolute; top:12px; right:12px; z-index:1100;
               padding:10px 16px; border-radius:8px; color:white; font-weight:600; cursor:pointer; background:#2563eb; }
+
   .sidebar { position:absolute; top:60px; right:12px; z-index:1000;
              width:300px; max-height:80vh; overflow-y:auto;
              background:white; border-radius:12px; padding:12px;
@@ -24,9 +21,12 @@
   .category { display:flex; align-items:center; gap:6px; padding:8px; margin:6px 0;
               border-radius:8px; background:#f8fafc; font-size:14px;
               border-left:4px solid #2563eb; font-weight:500; }
-  .quiz-panel { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+
+  /* Панель викторины справа */
+  .quiz-panel { position:absolute; top:80px; right:12px;
                 z-index:1000; background:white; padding:16px; border-radius:12px;
-                width:90%; max-width:420px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+                width:300px; max-height:80vh; overflow-y:auto;
+                box-shadow:0 4px 16px rgba(0,0,0,0.15);
                 display:none; }
   .question { font-size:15px; font-weight:600; margin-bottom:12px; text-align:center; }
   .progress { font-size:13px; text-align:center; color:#666; margin-bottom:8px; }
@@ -37,6 +37,7 @@
   .option.incorrect { border-color:#dc2626; background:#fef2f2; }
   .next-btn, .end-btn { margin-top:12px; padding:8px 16px; background:#2563eb; color:white;
                         border:none; border-radius:6px; cursor:pointer; width:100%; font-weight:600; }
+
   /* Login modal */
   #loginModal { position:fixed; top:0; left:0; width:100%; height:100%;
                 background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:2000; }
@@ -57,30 +58,10 @@
 <div class="sidebar" id="sidebar">
   <label class="category"><input type="checkbox" value="regierungs"> 🏛️ Regierungsgebäude</label>
   <label class="category"><input type="checkbox" value="gerichte"> ⚖️ Gerichtsgebäude</label>
-  <label class="category">👮 Bundespolizei</label>
-  <label class="category">🚓 Stadtpolizei</label>
-  <label class="category">🚉 Post & Verkehr</label>
-  <label class="category">📰 Massenmedien</label>
-  <label class="category">🏢 Kammern</label>
-  <label class="category">🏛️ Bezirksämter</label>
-  <label class="category">🏨 Hotels</label>
-  <label class="category">☕ Kaffeehäuser</label>
-  <label class="category">🍷 Heurigenorte</label>
-  <label class="category">⚰️ Friedhöfe</label>
-  <label class="category">🏥 Krankenanstalten</label>
-  <label class="category">👴 Pensionistenhäuser</label>
-  <label class="category">🎭 Kultur</label>
-  <label class="category">🎤 Kabaretts</label>
-  <label class="category">🎓 Universitäten</label>
-  <label class="category">🏛️ Museen</label>
-  <label class="category">🛣️ Gürtelquerungen</label>
-  <label class="category">🌉 Donaubrücken</label>
-  <label class="category">🔢 Nummerierungssystem</label>
-  <label class="category">🗺️ Straßengeographie</label>
-  <label class="category">🚗 Autobahnen</label>
   <button onclick="startMultiQuiz()" style="margin-top:12px; padding:8px; width:100%; background:#2563eb; color:white; border:none; border-radius:6px; font-weight:600;">Quiz starten</button>
 </div>
 
+<!-- Панель викторины -->
 <div class="quiz-panel" id="quizPanel">
   <div class="progress" id="progress"></div>
   <div class="question" id="questionText"></div>
@@ -92,6 +73,7 @@
   </div>
 </div>
 
+<!-- Login -->
 <div id="loginModal">
   <div id="loginBox">
     <h2 id="formTitle">Login</h2>
@@ -108,27 +90,25 @@
 </div>
 
 <script type="module">
-// --- Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCqVNVOXqYlPryEvjIYkOyp3BrWMtRMlGg",
+  apiKey: "ВАШ_АКТУАЛЬНЫЙ_API_KEY",
   authDomain: "wien-quiz.firebaseapp.com",
   databaseURL: "https://wien-quiz-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "wien-quiz",
   storageBucket: "wien-quiz.firebasestorage.app",
   messagingSenderId: "467695563938",
   appId: "1:467695563938:web:87b15a9b5de5d3764bd3fb",
-  measurementId: "G-SN0SMY9NH2"
+  measurementId: "G-SN8SMY9NH2"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// --- Quiz Fragen ---
+// --- Вопросы ---
 const quizData = {
-  regierungs: [
+ regierungs: [
     { name:"Parlament (Nationalrat und Bundesrat)", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correctAnswer:"Dr.-Karl-Renner-Ring 3", coordinates:[48.208200420886755, 16.35916158251087] },
     { name:"Bundespräsident (Präsidentschaftskanzlei)", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correctAnswer:"Ballhausplatz 1", coordinates:[48.20800169709753, 16.363951691458396] },
     { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correctAnswer:"Ballhausplatz 2", coordinates:[48.20854761977208, 16.363727653675692] },
@@ -183,7 +163,7 @@ const quizData = {
   autobahnen: []
 };
 
-// --- Login/Register ---
+// --- Авторизация ---
 let isRegister = false;
 function toggleForm(register=false){
   isRegister = register;
@@ -197,7 +177,6 @@ async function submitForm(){
   const email = document.getElementById("loginEmail").value.trim();
   const pass1 = document.getElementById("loginPass").value.trim();
   const pass2 = document.getElementById("loginPass2").value.trim();
-
   try {
     if(isRegister){
       if(pass1 !== pass2){
@@ -217,25 +196,85 @@ async function submitForm(){
 }
 window.submitForm = submitForm;
 
-// --- Leaflet Map ---
+// --- Карта ---
 const map = L.map('map').setView([48.2082,16.3738],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
 
-// --- Sidebar Toggle ---
+// --- Меню ---
 function toggleMenu(){
   const s = document.getElementById("sidebar");
   s.style.display = (s.style.display === "block") ? "none" : "block";
 }
 window.toggleMenu = toggleMenu;
 
+// --- Логика викторины ---
+let selectedCategories = [];
+let currentQuestions = [];
+let currentIndex = 0;
+let score = 0;
+
 function startMultiQuiz(){
+  const checked = Array.from(document.querySelectorAll(".sidebar input[type=checkbox]:checked"))
+                  .map(cb => cb.value);
+  if(checked.length===0){ alert("Bitte Kategorie wählen!"); return; }
+  selectedCategories = checked;
+  currentQuestions = [];
+  checked.forEach(cat => currentQuestions.push(...quizData[cat]));
+  currentIndex = 0;
+  score = 0;
   document.getElementById("quizPanel").style.display = "block";
   document.getElementById("sidebar").style.display = "none";
+  showQuestion();
 }
 window.startMultiQuiz = startMultiQuiz;
+
+function showQuestion(){
+  const q = currentQuestions[currentIndex];
+  document.getElementById("progress").textContent = `Frage ${currentIndex+1} von ${currentQuestions.length}`;
+  document.getElementById("questionText").textContent = q.question;
+  const cont = document.getElementById("optionsContainer");
+  cont.innerHTML = "";
+  q.options.forEach(opt=>{
+    const div=document.createElement("div");
+    div.className="option";
+    div.textContent=opt;
+    div.onclick=()=>checkAnswer(div,opt);
+    cont.appendChild(div);
+  });
+}
+function checkAnswer(el,opt){
+  const q=currentQuestions[currentIndex];
+  if(opt===q.correctAnswer){ el.classList.add("correct"); score++; }
+  else{ el.classList.add("incorrect"); }
+  document.querySelectorAll(".option").forEach(o=>o.onclick=null);
+  document.getElementById("nextBtn").style.display="block";
+}
+function nextQuestion(){
+  currentIndex++;
+  if(currentIndex<currentQuestions.length){
+    document.getElementById("nextBtn").style.display="none";
+    showQuestion();
+  } else {
+    document.getElementById("questionText").textContent=`Fertig! Punkte: ${score}/${currentQuestions.length}`;
+    document.getElementById("optionsContainer").innerHTML="";
+    document.getElementById("progress").textContent="";
+    document.getElementById("nextBtn").style.display="none";
+    document.getElementById("endBtns").style.display="block";
+  }
+}
+window.nextQuestion = nextQuestion;
+
+function restartQuiz(){
+  document.getElementById("endBtns").style.display="none";
+  startMultiQuiz();
+}
+window.restartQuiz = restartQuiz;
+function backToMenu(){
+  document.getElementById("quizPanel").style.display="none";
+  document.getElementById("sidebar").style.display="block";
+  document.getElementById("endBtns").style.display="none";
+}
+window.backToMenu = backToMenu;
 </script>
 </body>
 </html>
-
-
-
