@@ -35,8 +35,9 @@
   left:12px;
   right:12px;
   display:flex;
-  justify-content:flex-end; /* <-- кнопки справа */
+  justify-content:space-between; /* меню слева, иконки справа */
   gap:8px;
+  z-index:1500; /* ← поверх карты */
 }
 
 .btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
@@ -135,7 +136,7 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     <button class="btn secondary" id="replayBtn" title="Повторить вопрос">🔁 Wiederholen</button>
     <button class="btn secondary" id="replaySlowBtn" title="Повторить вопрос медленнее">🐢 Langsamer</button>
   </div>
-  <div class="small" style="text-align:center;margin-top:-6px;margin-bottom:6px;">ElevenLabs‑TTS: «Langsamer» = 0.6×</div>
+  <div class="small" style="text-align:center;margin-top:-6px;margin-bottom:6px;">Browser‑TTS: «Langsamer» = 0.25×</div>
 
   <div class="options" id="optionsContainer"></div>
   <button class="next-btn" id="nextBtn" style="display:none;">Weiter →</button>
@@ -291,8 +292,7 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 <!-- ====== ПРИЛОЖЕНИЕ (логика) ====== -->
 <script type="module">
 /* ================= CONFIG ================= */
-const ELEVEN_API_KEY  = "f3e700c3faf18f37d5b07200c0f83b5d22059752311d8c655afc5e0e8ba1188d"; // ElevenLabs
-const ELEVEN_VOICE_ID = "ROYWaqtov1Lot9vQBM3y";
+/* УБРАН ElevenLabs: используем бесплатный Browser Speech Synthesis (ниже). */
 const GOOGLE_MAPS_API_KEY = ""; // можно оставить пустым (будет OSM/Nominatim)
 
 /* ================= Firebase ================= */
@@ -321,19 +321,33 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const toast = (m,ms=1900)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
 function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
 
-/* ================= map ================= */
-const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+/* ================= map (safe init) ================= */
+let map=null;
+try{
+  if(window.L){
+    map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution:'© OpenStreetMap' }).addTo(map);
+  } else {
+    console.warn("Leaflet ist nicht geladen.");
+  }
+} catch(e){
+  console.warn("Map init error:", e);
+}
 let preMarker=null, gLayer=null, blinkTimer=null;
 const keptMarkers=[];
 
 function icon(status='blue', pulse=false){
   const sym = status==='green'?'✓':status==='red'?'✗':'•';
   const cls = `mk ${status==='green'?'green':status==='red'?'red':'blue'} ${pulse?'pulse':''}`;
-  return L.divIcon({className:'', html:`<div class="${cls}">${sym}</div>`, iconSize:[26,26], iconAnchor:[13,13]});
+  return (window.L && L.divIcon) ? L.divIcon({className:'', html:`<div class="${cls}">${sym}</div>`, iconSize:[26,26], iconAnchor:[13,13]}) : null;
 }
-function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
-function clearViz(){ if(gLayer){ map.removeLayer(gLayer); gLayer=null; } if(blinkTimer){ clearInterval(blinkTimer); blinkTimer=null; } }
+function fly([lat,lng], zoom=16){ if(!map) return; map.flyTo([lat,lng], zoom, {duration:1.0}); }
+function clearViz(){
+  if(!map) return;
+  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
+  if(blinkTimer){ clearInterval(blinkTimer); blinkTimer=null; }
+}
 
 /* ——— геометрия для Gürtel-визуализаций ——— */
 function project([lat,lng], bearingDeg, dist){
@@ -348,6 +362,7 @@ function semiCircle(latlng, bearing, radius, side){
   const pts=[]; for(let a=start; a<=end; a+=5) pts.push(project(latlng,a,radius)); pts.push(latlng); return pts;
 }
 function drawIntersectionViz({center, gurtelBearing, side, streetName, continueName, blink="before"}){
+  if(!map || !window.L) return null;
   clearViz();
   const len=240, r=140;
   const g1=project(center,gurtelBearing,len/2), g2=project(center,gurtelBearing+180,len/2);
@@ -373,7 +388,7 @@ async function geocode(address){
   const full = address + citySuffix;
   if(GEO_CACHE.has(full)) return GEO_CACHE.get(full);
 
-  // 1) Google
+  // 1) Google (если указан ключ)
   if(GOOGLE_MAPS_API_KEY){
     try{
       const u=`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(full)}&key=${GOOGLE_MAPS_API_KEY}`;
@@ -504,6 +519,7 @@ async function coordsFor(q){
 }
 
 async function preLocate(q){
+  if(!map || !window.L) return;
   const coords = await coordsFor(q);
   if(!coords) return;
   if(preMarker){ map.removeLayer(preMarker); preMarker=null; }
@@ -540,7 +556,7 @@ async function showQuestion(first=false){
   }
 
   lastQuestionText = `${q.name||""}. ${q.question}`;
-  speak(lastQuestionText, 1.0);
+  speak(lastQuestionText, 0.5); // по умолчанию медленнее
 }
 
 async function checkAnswer(el,opt){
@@ -550,13 +566,16 @@ async function checkAnswer(el,opt){
   if(!right){ const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); if(r) r.classList.add("correct"); }
   if(right) score++;
 
-  // изменить цвет метки и оставить её
+  // показать кнопку "Далее"
+  $("#nextBtn").style.display="block";
+
+  // изменить цвет метки и оставить её (если есть карта)
   try{
-    if(preMarker){
+    if(map && window.L && preMarker){
       preMarker.setIcon(icon(right?'green':'red', false));
       keptMarkers.push(preMarker);
       preMarker=null;
-    } else if(q.address){
+    } else if(map && window.L && q.address){
       const coords = await coordsFor(q);
       if(coords){
         const m=L.marker(coords,{icon:icon(right?'green':'red',false)}).addTo(map);
@@ -572,11 +591,11 @@ async function checkAnswer(el,opt){
     if(q._vizSegments.mk){ q._vizSegments.mk.setIcon(icon(right?'green':'red')); }
   }
 
- if(right){
-  speak(`Richtig. ${q.correct || q.address}.`, 1.0);
-}else{
-  speak(`Leider falsch. Richtig ist: ${q.correct || q.address}.`, 1.0);
-}
+  if(right){
+    speak(`Richtig. ${q.correct || q.address}.`, 0.5);
+  }else{
+    speak(`Leider falsch. Richtig ist: ${q.correct || q.address}.`, 0.5);
+  }
 
   // статистика
   sess.total++; if(right) sess.correct++;
@@ -590,7 +609,7 @@ function nextQuestion(){
     $("#questionText").textContent=`Fertig! Punkte: ${score}/${pool.length}`;
     $("#optionsContainer").innerHTML=""; $("#progress").textContent=""; $("#progressFill").style.width="100%";
     $("#nextBtn").style.display="none"; $("#endBtns").style.display="block"; clearViz();
-    speak(`Fertig. Punkte: ${score} von ${pool.length}.`, 1.0);
+    speak(`Fertig. Punkte: ${score} von ${pool.length}.`, 0.5);
     saveSession();
   }
 }
@@ -641,7 +660,13 @@ function openStudy(){
 let isReg=false, guest=false;
 $("#toRegister").onclick=(e)=>{e.preventDefault();isReg=true;$("#formTitle").textContent="Register";$("#loginPass2").style.display="block";$("#submitBtn").textContent="Register";};
 $("#toLogin").onclick=(e)=>{e.preventDefault();isReg=false;$("#formTitle").textContent="Login";$("#loginPass2").style.display="none";$("#submitBtn").textContent="Log in";};
-$("#guestBtn").onclick=()=>{ guest=true; $("#loginModal").style.display="none"; loadCats(); loadMyStats(); loadLeaderboard(); toast("Gastmodus: Daten nur lokal"); };
+$("#guestBtn").onclick=()=>{
+  guest=true;
+  $("#loginModal").style.display="none";
+  $("#sidebar").style.display="block"; // показать меню в гостевом режиме
+  loadCats(); loadMyStats(); loadLeaderboard();
+  toast("Gastmodus: Daten nur lokal");
+};
 $("#submitBtn").onclick=async()=>{
   const email=$("#loginEmail").value.trim(), p1=$("#loginPass").value.trim(), p2=$("#loginPass2").value.trim();
   $("#loginError").textContent="";
@@ -660,7 +685,16 @@ $("#submitBtn").onclick=async()=>{
 };
 $("#logoutBtn").onclick=()=>{ guest=false; signOut(auth); };
 
-onAuthStateChanged(auth, async (user)=>{ if(user){ $("#loginModal").style.display="none"; toast("Willkommen!"); loadCats(); loadMyStats(); loadLeaderboard(); } else if(!guest){ $("#loginModal").style.display="flex"; } });
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    $("#loginModal").style.display="none";
+    $("#sidebar").style.display="block"; // показать меню после входа
+    toast("Willkommen!");
+    loadCats(); loadMyStats(); loadLeaderboard();
+  } else if(!guest){
+    $("#loginModal").style.display="flex";
+  }
+});
 
 /* ================= Stats & Leaderboard ================= */
 const sess={total:0,correct:0,byCat:{}};
@@ -709,28 +743,67 @@ async function loadLeaderboard(){
   items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.style.cssText="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px dashed var(--border);"+(it.user===me?" background:rgba(37,99,235,.08);border-radius:8px;":""); row.innerHTML=`<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
 }
 
-/* ================= TTS ================= */
-let ttsOn=true; const audioEl=new Audio(); audioEl.volume=1;
-let queue=[], playing=false, pendingRate=1.0;
-function speak(text, rate=1.0){
+/* ================= TTS (Browser SpeechSynthesis, без ключей) ================= */
+let ttsOn=true;
+let ttsQueue=[]; let ttsPlaying=false;
+let preferredVoice=null;
+const DEFAULT_RATE = 0.5;  // медленнее по умолчанию
+const SLOW_RATE = 0.25;    // «Langsamer» (≈ в 4 раза медленнее)
+
+function pickVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if(!voices || !voices.length) return null;
+  // Пытаемся найти немецкие голоса, предпочтительно AT/DE
+  const deVoices = voices.filter(v => /de(-|_|$)/i.test(v.lang) || /german/i.test(v.name));
+  // Стадия 1: de-AT, затем de-DE, затем любые de
+  let v = deVoices.find(v=>/de[-_]?AT/i.test(v.lang)) 
+       || deVoices.find(v=>/de[-_]?DE/i.test(v.lang))
+       || deVoices[0]
+       || voices[0];
+  return v || null;
+}
+
+function speak(text, rate=DEFAULT_RATE){
   if(!ttsOn || !text) return;
+  if(!('speechSynthesis' in window)){
+    toast("TTS nicht verfügbar (Browser).");
+    return;
+  }
+  // Разбиваем по предложениям
   const parts=text.replace(/\s+/g," ").split(/(?<=[\.\!\?])/g).map(s=>s.trim()).filter(Boolean);
-  queue.push(...parts); pendingRate=rate; if(!playing) nextSpeak();
+  ttsQueue.push(...parts.map(p=>({text:p, rate})));
+  if(!ttsPlaying) nextSpeak();
 }
-async function nextSpeak(){
-  if(queue.length===0){ playing=false; return; }
-  playing=true; const part=queue.shift();
-  try{
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,{
-      method:"POST", headers:{ "xi-api-key": ELEVEN_API_KEY, "Content-Type":"application/json", "Accept":"audio/mpeg" },
-      body: JSON.stringify({ text: part, model_id:"eleven_multilingual_v2", voice_settings:{ stability:0.4, similarity_boost:0.8, style:0, use_speaker_boost:true } })
-    });
-    const blob=await res.blob(); audioEl.src=URL.createObjectURL(blob); audioEl.playbackRate=pendingRate; await audioEl.play(); audioEl.onended=()=> nextSpeak();
-  }catch(e){ console.warn("TTS error",e); playing=false; }
+
+function nextSpeak(){
+  if(ttsQueue.length===0){ ttsPlaying=false; return; }
+  ttsPlaying=true;
+  if(!preferredVoice) preferredVoice = pickVoice();
+  const job = ttsQueue.shift();
+  const u = new SpeechSynthesisUtterance(job.text);
+  if(preferredVoice){ u.voice = preferredVoice; u.lang = preferredVoice.lang; }
+  else { u.lang = "de-DE"; }
+  u.rate = job.rate;
+  u.onend = ()=> nextSpeak();
+  u.onerror = ()=> { console.warn("TTS error"); nextSpeak(); };
+  window.speechSynthesis.speak(u);
 }
-function stopSpeak(){ try{ audioEl.pause(); audioEl.currentTime=0; }catch{} queue=[]; playing=false; }
-$("#replayBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, 1.0); };
-$("#replaySlowBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, 0.6); };
+
+function stopSpeak(){
+  try{ if('speechSynthesis' in window){ window.speechSynthesis.cancel(); } }catch{}
+  ttsQueue=[]; ttsPlaying=false;
+}
+
+if('speechSynthesis' in window){
+  // Некоторые браузеры отдают голоса асинхронно
+  window.speechSynthesis.onvoiceschanged = ()=>{
+    preferredVoice = pickVoice();
+  };
+}
+
+$("#replayBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, DEFAULT_RATE); };
+$("#replaySlowBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, SLOW_RATE); };
 
 /* ================= UI ================= */
 function loadCats(){
@@ -746,7 +819,11 @@ function loadCats(){
 }
 
 // кнопки
-$("#menuBtn").onclick = ()=>{ const s=$("#sidebar"); s.style.display=(s.style.display==="block"?"none":"block"); };
+$("#menuBtn").onclick = ()=>{
+  const s=$("#sidebar");
+  const visible = getComputedStyle(s).display!=="none";
+  s.style.display = visible ? "none" : "block";
+};
 $("#startBtn").onclick = ()=>{ resetSess(); startQuiz("normal"); };
 $("#examBtn").onclick  = ()=>{ resetSess(); startQuiz("exam"); };
 $("#officialBtn").onclick = ()=>{ resetSess(); startOfficialBlock(); };
@@ -762,10 +839,19 @@ document.addEventListener("keydown",(e)=>{
   if($("#quizPanel").style.display!=="block") return;
   const i=["1","2","3","4","5","6"].indexOf(e.key);
   if(i>=0){ const opt=$$("#optionsContainer .option")[i]; if(opt && opt.onclick) opt.click(); }
-  if(e.key==="Enter" && $("#nextBtn").style.display==="block") nextQuestion();
+  if(e.key==="Enter" && getComputedStyle($("#nextBtn")).display!=="none") nextQuestion();
 });
 
-window.addEventListener("load", ()=>{ toast("Bereit. Melden Sie sich an (oder Gastmodus)."); loadCats(); });
+window.addEventListener("load", ()=>{
+  toast("Bereit. Melden Sie sich an (oder Gastmodus).");
+  loadCats();
+  // Для надёжности загрузим голоса TTS
+  if('speechSynthesis' in window){
+    // Запросим голоса (хак для некоторых браузеров)
+    window.speechSynthesis.getVoices();
+    setTimeout(()=>{ preferredVoice = pickVoice(); }, 300);
+  }
+});
 </script>
 
 <!-- OCR оверлей (по желанию, положи kurs.pdf рядом с index.html и дополняй базу) -->
@@ -813,7 +899,7 @@ const OCR = {
       if(/FRIEDHÖFE|FRIEDHOEFE/i.test(pageTxt))        parsePairs('friedhoefe', lines);
       if(/KRANKENANSTALTEN/i.test(pageTxt))            parsePairs('kranken', lines);
       if(/PENSIONISTENWOHNHEIME/i.test(pageTxt))       parsePairs('pension', lines);
-      if(/KULTURINSTITUTE|BÜHNENHÄUSER|BUEHNENHAEUSER/i.test(pageTxt)) parsePairs('kultur', lines);
+      if(/KULTURINSTITUTE|BÜHNЕНHÄUSER|BUEHNENHAEUSER/i.test(pageTxt)) parsePairs('kultur', lines);
       if(/KABARETTS|VOLKSBÜHNEN|VOLKSBUEHNEN/i.test(pageTxt)) parsePairs('kabarett', lines);
       if(/UNIVERSITÄTEN|BILDUNGSANSTALTEN|UNIVERSITAETEN/i.test(pageTxt)) parsePairs('unis', lines);
       if(/MUSEEN/i.test(pageTxt))                      parsePairs('museen', lines);
@@ -830,6 +916,3 @@ const OCR = {
 </script>
 </body>
 </html>
-
-
-
