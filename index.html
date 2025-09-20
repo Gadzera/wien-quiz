@@ -657,38 +657,78 @@ function openStudy(){
 }
 
 /* ================= Auth ================= */
-let isReg=false, guest=false;
-$("#toRegister").onclick=(e)=>{e.preventDefault();isReg=true;$("#formTitle").textContent="Register";$("#loginPass2").style.display="block";$("#submitBtn").textContent="Register";};
-$("#toLogin").onclick=(e)=>{e.preventDefault();isReg=false;$("#formTitle").textContent="Login";$("#loginPass2").style.display="none";$("#submitBtn").textContent="Log in";};
+let isReg = false, guest = false;
+
+$("#toRegister").onclick=(e)=>{
+  e.preventDefault();
+  isReg = true;
+  $("#formTitle").textContent = "Register";
+  $("#loginPass2").style.display = "block";
+  $("#submitBtn").textContent = "Register";
+};
+
+$("#toLogin").onclick=(e)=>{
+  e.preventDefault();
+  isReg = false;
+  $("#formTitle").textContent = "Login";
+  $("#loginPass2").style.display = "none";
+  $("#submitBtn").textContent = "Log in";
+};
+
 $("#guestBtn").onclick=()=>{
-  guest=true;
+  guest = true;
   $("#loginModal").style.display="none";
-  $("#sidebar").style.display="block"; // показать меню в гостевом режиме
+  $("#sidebar").style.display="block";
   loadCats(); loadMyStats(); loadLeaderboard();
   toast("Gastmodus: Daten nur lokal");
 };
+
 $("#submitBtn").onclick=async()=>{
-  const email=$("#loginEmail").value.trim(), p1=$("#loginPass").value.trim(), p2=$("#loginPass2").value.trim();
+  const email = $("#loginEmail").value.trim();
+  const p1    = $("#loginPass").value.trim();
+  const p2    = $("#loginPass2").value.trim();
   $("#loginError").textContent="";
+
   try{
-    if(isReg){ if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; } await createUserWithEmailAndPassword(auth,email,p1); toast("✅ Registrierung erfolgreich"); }
-    else { await signInWithEmailAndPassword(auth,email,p1); toast("✅ Login erfolgreich"); }
+    if(isReg){
+      if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; }
+      await createUserWithEmailAndPassword(auth,email,p1);
+      toast("✅ Registrierung erfolgreich");
+      $("#loginModal").style.display="none";
+      $("#sidebar").style.display="block";
+    } else {
+      await signInWithEmailAndPassword(auth,email,p1);
+      toast("✅ Login erfolgreich");
+      $("#loginModal").style.display="none";
+      $("#sidebar").style.display="block";
+    }
+    loadCats(); loadMyStats(); loadLeaderboard();
   }catch(err){
     const code=err?.code||"";
-    if(code.includes("auth/unauthorized-domain")) $("#loginError").innerHTML="❗ <b>auth/unauthorized-domain</b> – добавьте домен GitHub Pages в Firebase → Authentication → Settings → Authorized domains.";
-    else if(code.includes("network-request-failed")) $("#loginError").textContent="⚠️ Netzwerkfehler. Проверьте HTTPS и интернет.";
-    else if(code.includes("user-not-found")) $("#loginError").textContent="Benutzer nicht gefunden.";
-    else if(code.includes("wrong-password")) $("#loginError").textContent="Falsches Passwort.";
-    else $("#loginError").textContent="⚠️ "+(err.message||err);
-    return;
+    if(code.includes("auth/unauthorized-domain"))
+      $("#loginError").innerHTML="❗ <b>auth/unauthorized-domain</b> – добавьте домен GitHub Pages в Firebase → Authentication → Settings → Authorized domains.";
+    else if(code.includes("network-request-failed"))
+      $("#loginError").textContent="⚠️ Netzwerkfehler. Проверьте HTTPS/интернет.";
+    else if(code.includes("user-not-found"))
+      $("#loginError").textContent="Benutzer nicht gefunden.";
+    else if(code.includes("wrong-password"))
+      $("#loginError").textContent="Falsches Passwort.";
+    else
+      $("#loginError").textContent="⚠️ "+(err.message||err);
   }
 };
-$("#logoutBtn").onclick=()=>{ guest=false; signOut(auth); };
 
-onAuthStateChanged(auth, async (user)=>{
+$("#logoutBtn").onclick=()=>{
+  guest = false;
+  signOut(auth);
+  $("#sidebar").style.display="none";
+  $("#loginModal").style.display="flex";
+};
+
+onAuthStateChanged(auth,(user)=>{
   if(user){
     $("#loginModal").style.display="none";
-    $("#sidebar").style.display="block"; // показать меню после входа
+    $("#sidebar").style.display="block";
     toast("Willkommen!");
     loadCats(); loadMyStats(); loadLeaderboard();
   } else if(!guest){
@@ -918,4 +958,5 @@ const OCR = {
 </script>
 </body>
 </html>
+
 
