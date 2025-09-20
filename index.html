@@ -563,8 +563,11 @@ async function checkAnswer(el,opt){
     if(q._vizSegments.mk){ q._vizSegments.mk.setIcon(icon(right?'green':'red')); }
   }
 
-  speak(right ? "Richtig. Gut gemacht." : `Leider falsch. Richtig ist: ${q.correct||q.address}.`, 1.0);
-  $("#nextBtn").style.display="block";
+ if(right){
+  speak(`Richtig. ${q.correct || q.address}.`, 1.0);
+}else{
+  speak(`Leider falsch. Richtig ist: ${q.correct || q.address}.`, 1.0);
+}
 
   // статистика
   sess.total++; if(right) sess.correct++;
@@ -818,3 +821,4 @@ const OCR = {
 </script>
 </body>
 </html>
+
