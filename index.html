@@ -657,78 +657,38 @@ function openStudy(){
 }
 
 /* ================= Auth ================= */
-let isReg = false, guest = false;
-
-$("#toRegister").onclick=(e)=>{
-  e.preventDefault();
-  isReg = true;
-  $("#formTitle").textContent = "Register";
-  $("#loginPass2").style.display = "block";
-  $("#submitBtn").textContent = "Register";
-};
-
-$("#toLogin").onclick=(e)=>{
-  e.preventDefault();
-  isReg = false;
-  $("#formTitle").textContent = "Login";
-  $("#loginPass2").style.display = "none";
-  $("#submitBtn").textContent = "Log in";
-};
-
+let isReg=false, guest=false;
+$("#toRegister").onclick=(e)=>{e.preventDefault();isReg=true;$("#formTitle").textContent="Register";$("#loginPass2").style.display="block";$("#submitBtn").textContent="Register";};
+$("#toLogin").onclick=(e)=>{e.preventDefault();isReg=false;$("#formTitle").textContent="Login";$("#loginPass2").style.display="none";$("#submitBtn").textContent="Log in";};
 $("#guestBtn").onclick=()=>{
-  guest = true;
+  guest=true;
   $("#loginModal").style.display="none";
-  $("#sidebar").style.display="block";
+  $("#sidebar").style.display="block"; // показать меню в гостевом режиме
   loadCats(); loadMyStats(); loadLeaderboard();
   toast("Gastmodus: Daten nur lokal");
 };
-
 $("#submitBtn").onclick=async()=>{
-  const email = $("#loginEmail").value.trim();
-  const p1    = $("#loginPass").value.trim();
-  const p2    = $("#loginPass2").value.trim();
+  const email=$("#loginEmail").value.trim(), p1=$("#loginPass").value.trim(), p2=$("#loginPass2").value.trim();
   $("#loginError").textContent="";
-
   try{
-    if(isReg){
-      if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; }
-      await createUserWithEmailAndPassword(auth,email,p1);
-      toast("✅ Registrierung erfolgreich");
-      $("#loginModal").style.display="none";
-      $("#sidebar").style.display="block";
-    } else {
-      await signInWithEmailAndPassword(auth,email,p1);
-      toast("✅ Login erfolgreich");
-      $("#loginModal").style.display="none";
-      $("#sidebar").style.display="block";
-    }
-    loadCats(); loadMyStats(); loadLeaderboard();
+    if(isReg){ if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; } await createUserWithEmailAndPassword(auth,email,p1); toast("✅ Registrierung erfolgreich"); }
+    else { await signInWithEmailAndPassword(auth,email,p1); toast("✅ Login erfolgreich"); }
   }catch(err){
     const code=err?.code||"";
-    if(code.includes("auth/unauthorized-domain"))
-      $("#loginError").innerHTML="❗ <b>auth/unauthorized-domain</b> – добавьте домен GitHub Pages в Firebase → Authentication → Settings → Authorized domains.";
-    else if(code.includes("network-request-failed"))
-      $("#loginError").textContent="⚠️ Netzwerkfehler. Проверьте HTTPS/интернет.";
-    else if(code.includes("user-not-found"))
-      $("#loginError").textContent="Benutzer nicht gefunden.";
-    else if(code.includes("wrong-password"))
-      $("#loginError").textContent="Falsches Passwort.";
-    else
-      $("#loginError").textContent="⚠️ "+(err.message||err);
+    if(code.includes("auth/unauthorized-domain")) $("#loginError").innerHTML="❗ <b>auth/unauthorized-domain</b> – добавьте домен GitHub Pages в Firebase → Authentication → Settings → Authorized domains.";
+    else if(code.includes("network-request-failed")) $("#loginError").textContent="⚠️ Netzwerkfehler. Проверьте HTTPS и интернет.";
+    else if(code.includes("user-not-found")) $("#loginError").textContent="Benutzer nicht gefunden.";
+    else if(code.includes("wrong-password")) $("#loginError").textContent="Falsches Passwort.";
+    else $("#loginError").textContent="⚠️ "+(err.message||err);
+    return;
   }
 };
+$("#logoutBtn").onclick=()=>{ guest=false; signOut(auth); };
 
-$("#logoutBtn").onclick=()=>{
-  guest = false;
-  signOut(auth);
-  $("#sidebar").style.display="none";
-  $("#loginModal").style.display="flex";
-};
-
-onAuthStateChanged(auth,(user)=>{
+onAuthStateChanged(auth, async (user)=>{
   if(user){
     $("#loginModal").style.display="none";
-    $("#sidebar").style.display="block";
+    $("#sidebar").style.display="block"; // показать меню после входа
     toast("Willkommen!");
     loadCats(); loadMyStats(); loadLeaderboard();
   } else if(!guest){
@@ -783,27 +743,25 @@ async function loadLeaderboard(){
   items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.style.cssText="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px dashed var(--border);"+(it.user===me?" background:rgba(37,99,235,.08);border-radius:8px;":""); row.innerHTML=`<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
 }
 
-let ttsOn = true;
+/* ================= TTS (Browser SpeechSynthesis, без ключей) ================= */
+let ttsOn=true;
+let ttsQueue=[]; let ttsPlaying=false;
+let preferredVoice=null;
+const DEFAULT_RATE = 0.5;  // медленнее по умолчанию
+const SLOW_RATE = 0.25;    // «Langsamer» (≈ в 4 раза медленнее)
 
-async function speak(text, rate=1.0){
-  if(!ttsOn || !text) return;
-  try {
-    const res = await fetch("http://localhost:5002/api/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
-    });
-    const blob = await res.blob();
-    const audio = new Audio(URL.createObjectURL(blob));
-    audio.playbackRate = rate;
-    await audio.play();
-  } catch(e){
-    console.error("TTS error:", e);
-  }
-}
-
-function stopSpeak(){
-  try { audio.pause(); audio.currentTime = 0; } catch {}
+function pickVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if(!voices || !voices.length) return null;
+  // Пытаемся найти немецкие голоса, предпочтительно AT/DE
+  const deVoices = voices.filter(v => /de(-|_|$)/i.test(v.lang) || /german/i.test(v.name));
+  // Стадия 1: de-AT, затем de-DE, затем любые de
+  let v = deVoices.find(v=>/de[-_]?AT/i.test(v.lang)) 
+       || deVoices.find(v=>/de[-_]?DE/i.test(v.lang))
+       || deVoices[0]
+       || voices[0];
+  return v || null;
 }
 
 function speak(text, rate=DEFAULT_RATE){
@@ -958,5 +916,3 @@ const OCR = {
 </script>
 </body>
 </html>
-
-
