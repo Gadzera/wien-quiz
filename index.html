@@ -743,25 +743,27 @@ async function loadLeaderboard(){
   items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.style.cssText="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px dashed var(--border);"+(it.user===me?" background:rgba(37,99,235,.08);border-radius:8px;":""); row.innerHTML=`<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
 }
 
-/* ================= TTS (Browser SpeechSynthesis, без ключей) ================= */
-let ttsOn=true;
-let ttsQueue=[]; let ttsPlaying=false;
-let preferredVoice=null;
-const DEFAULT_RATE = 0.5;  // медленнее по умолчанию
-const SLOW_RATE = 0.25;    // «Langsamer» (≈ в 4 раза медленнее)
+let ttsOn = true;
 
-function pickVoice(){
-  if(!('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if(!voices || !voices.length) return null;
-  // Пытаемся найти немецкие голоса, предпочтительно AT/DE
-  const deVoices = voices.filter(v => /de(-|_|$)/i.test(v.lang) || /german/i.test(v.name));
-  // Стадия 1: de-AT, затем de-DE, затем любые de
-  let v = deVoices.find(v=>/de[-_]?AT/i.test(v.lang)) 
-       || deVoices.find(v=>/de[-_]?DE/i.test(v.lang))
-       || deVoices[0]
-       || voices[0];
-  return v || null;
+async function speak(text, rate=1.0){
+  if(!ttsOn || !text) return;
+  try {
+    const res = await fetch("http://localhost:5002/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    const blob = await res.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.playbackRate = rate;
+    await audio.play();
+  } catch(e){
+    console.error("TTS error:", e);
+  }
+}
+
+function stopSpeak(){
+  try { audio.pause(); audio.currentTime = 0; } catch {}
 }
 
 function speak(text, rate=DEFAULT_RATE){
@@ -916,3 +918,4 @@ const OCR = {
 </script>
 </body>
 </html>
+
