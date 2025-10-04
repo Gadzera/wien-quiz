@@ -81,11 +81,75 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* Gürtel highlight */
 .badge{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:800; }
 .badge-inner{ background:#0ea5e9; color:#fff; }
 .badge-outer{ background:#f59e0b; color:#111; }
 .small{ font-size:12px; color:var(--muted); }
 hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
+
+.stats-panel {
+  background: var(--panel);
+  padding: 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.question-editor {
+  background: var(--chip);
+  padding: 15px;
+  border-radius: var(--radius);
+  margin: 10px 0;
+  border: 1px solid var(--border);
+}
+
+.question-editor textarea, .question-editor input {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.question-editor button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand);
+  color: white;
+  cursor: pointer;
+}
+
+/* Map markers */
+.marker-correct {
+  background-color: #16a34a;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.marker-incorrect {
+  background-color: #dc2626;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.marker-question {
+  background-color: #2563eb;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
 </style>
 </head>
 <body>
@@ -94,23 +158,25 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 
 <!-- Topbar -->
 <div class="topbar">
-  <button class="btn" id="menuBtn">☰ Themen</button>
+  <button class="btn" id="menuBtn" style="margin-left: 120px;">☰ Themen</button>
   <div class="spacer"></div>
-  <button class="iconbtn" id="studyBtn" title="Gürtel lernen">🧭 Gürtel</button>
-  <button class="iconbtn" id="statsBtn" title="Statistik">📊</button>
+  <button class="iconbtn" id="studyBtn" title="Учебный режим Gürtel">🧭 Gürtel</button>
+  <button class="iconbtn" id="editBtn" title="Редактор вопросов">✏️</button>
+  <button class="iconbtn" id="statsBtn" title="Статистика">📊</button>
+  <button class="iconbtn" id="ttsToggleBtn" title="Озвучка вкл/выкл">🔊</button>
 </div>
 
 <!-- Sidebar: Kategorien -->
 <div class="sidebar" id="sidebar">
-  <h3>🗂️ Taxilenker-Prüfungsfragen</h3>
+  <h3>🗂️ Themen (I. ORTSKUNDE – 23 Kapitel aus dem PDF)</h3>
   <div id="catList"></div>
   <button id="startBtn" class="btn" style="margin-top:10px;width:100%;">▶️ Quiz starten</button>
   <button id="examBtn" class="btn secondary" style="margin-top:8px;width:100%;">📝 Prüfungsmodus (10 Fragen)</button>
-  <p class="small" style="margin-top:8px">Tasten: <span class="kbd">1-4</span> = Antworten, <span class="kbd">Enter</span> = Weiter</p>
+  <p class="small" style="margin-top:8px">Hotkeys: <span class="kbd">1..6</span> für Antworten, <span class="kbd">Enter</span> = Weiter.</p>
 </div>
 
 <!-- Quiz Panel -->
-<div class="quiz-panel" id="quizPanel">
+<div class="quiz-panel" id="quizPanel" aria-live="polite">
   <div class="progress" id="progress"></div>
   <div class="progressbar"><div class="progressbar-fill" id="progressFill"></div></div>
   <div class="question" id="questionText"></div>
@@ -124,360 +190,334 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 
 <!-- Panel: Gürtel Study -->
 <div class="panel" id="studyPanel">
-  <h3>🧭 Gürtel lernen</h3>
-  <p class="small">Klicken Sie auf eine Kreuzung, um sie auf der Karte zu sehen</p>
+  <h3>🧭 Учебный режим: Gürtel</h3>
+  <p class="small">Клик по строке — карта покажет перекрёсток.</p>
   <div id="studyList"></div>
+</div>
+
+<!-- Panel: Question Editor -->
+<div class="panel" id="editPanel">
+  <h3>✏️ Редактор вопросов</h3>
+  <div class="question-editor">
+    <select id="categorySelect">
+      <option value="">Выберите категорию</option>
+    </select>
+    <input type="text" id="questionName" placeholder="Название вопроса">
+    <textarea id="questionTextEdit" placeholder="Текст вопроса"></textarea>
+    <input type="text" id="option1" placeholder="Вариант ответа 1">
+    <input type="text" id="option2" placeholder="Вариант ответа 2">
+    <input type="text" id="option3" placeholder="Вариант ответа 3">
+    <input type="text" id="option4" placeholder="Вариант ответа 4">
+    <input type="text" id="option5" placeholder="Вариант ответа 5">
+    <input type="text" id="option6" placeholder="Вариант ответа 6">
+    <select id="correctAnswer">
+      <option value="">Правильный ответ</option>
+      <option value="0">Вариант 1</option>
+      <option value="1">Вариант 2</option>
+      <option value="2">Вариант 3</option>
+      <option value="3">Вариант 4</option>
+      <option value="4">Вариант 5</option>
+      <option value="5">Вариант 6</option>
+    </select>
+    <button id="saveQuestion">💾 Сохранить вопрос</button>
+    <button id="loadDefault" class="secondary">🔄 Загрузить стандартные вопросы</button>
+  </div>
 </div>
 
 <!-- Panel: Stats -->
 <div class="panel" id="statsPanel">
-  <h3>📊 Statistik</h3>
-  <div style="background:var(--chip);padding:15px;border-radius:var(--radius);">
-    <p>Richtige Antworten: <span id="correctCount">0</span> von <span id="totalCount">0</span></p>
-    <p>Erfolgsquote: <span id="accuracy">0%</span></p>
-    <button class="btn secondary" id="resetStats" style="margin-top:10px;">Statistik zurücksetzen</button>
+  <h3>📊 Моя статистика</h3>
+  <div class="stats-panel" id="myStats">
+    <p>Правильных ответов: <span id="correctCount">0</span> из <span id="totalCount">0</span></p>
+    <p>Процент правильных: <span id="accuracy">0%</span></p>
+    <button class="btn secondary" id="resetStats" style="margin-top:10px;">Сбросить статистику</button>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-// ============ KOMPLETTE FRAGEN AUS DEM PDF ============
+// ============ DATA ============
+// Ключ ElevenLabs и голос
+const ELEVEN_API_KEY = "YOUR_ELEVENLABS_API_KEY_HERE"; // Замените на ваш ключ
+const ELEVEN_VOICE_ID = "ROYWaqtov1Lot9vQBM3y";
+
+// 23 темы I. ORTSKUNDE
 const THEMEN = [
- {key:"orte", title:"I. Ortskunde - Adressen", pages:"S.6-22"},
- {key:"betrieb", title:"II. Betriebsordnung", pages:"S.39-51"},
- {key:"tarif", title:"III. Wiener Tarif", pages:"S.52-61"},
- {key:"stvo", title:"IV. Straßenverkehrsordnung", pages:"S.62-75"},
- {key:"kfg", title:"V. Kraftfahrgesetz", pages:"S.76-80"},
- {key:"arbeit", title:"VI. Arbeits- und Sozialrecht", pages:"S.84-95"}
+ {key:"regierungs", title:"1) Regierungsgebäude", pages:"S.6"},
+ {key:"gerichte",   title:"2) Gerichtsgebäude", pages:"S.6–7"},
+ {key:"bundespolizei", title:"3) Bundespolizeidirektion Wien", pages:"S.7"},
+ {key:"stadtpolizei",  title:"4) Stadtpolizeikommanden / Polizeiinspektionen", pages:"S.7–10"},
+ {key:"post", title:"5) Post", pages:"S.6"},
+ {key:"medien", title:"6) Massenmedien", pages:"S.36 (APA) etc."},
+ {key:"kammern", title:"7) Kammern", pages:"(WKO etc.)"},
+ {key:"bezirksaemter", title:"8) Magistratische Bezirksämter (Amtshäuser)", pages:"S.8–9"},
+ {key:"hotels", title:"9) Beherbergungsbetriebe / Hotels (Auswahl)", pages:"S.10–13"},
+ {key:"cafes", title:"10) Kaffeehäuser", pages:"S.14"},
+ {key:"heurige", title:"11) Bezirksnamen & Heurigenorte", pages:"S.15–16"},
+ {key:"friedhoefe", title:"12) Friedhöfe", pages:"S.16–18"},
+ {key:"kranken", title:"13) Krankenanstalten", pages:"S.17–19"},
+ {key:"pension", title:"14) Pensionistenwohnheime", pages:"S.19"},
+ {key:"kultur",  title:"15) Kulturinstitute / Bühnenhäuser", pages:"S.19"},
+ {key:"kabarett",title:"15a) Kabaretts, Volksbühnen", pages:"S.19"},
+ {key:"unis",   title:"16) Universitäten / Bildungsanstalten", pages:"S.20"},
+ {key:"museen", title:"17) Museen", pages:"S.20–22"},
+ {key:"bauten", title:"18) Bauten, Sehenswürdigkeiten, Hotels & Cafés", pages:"S.21–22"},
+ {key:"guertel",title:"19) Nach dem GÜRTEL überquert + Gürtelseiten", pages:"S.23 & S.27"},
+ {key:"donau",  title:"20) Nach Brücken über DONAUKANAL/DONAU", pages:"S.24"},
+ {key:"nummern",title:"21) Nummerierungssystem", pages:"S.24"},
+ {key:"strassgeo", title:"22) Straßengeographie (Allgemein)", pages:"S.25"},
+ {key:"wichtige", title:"23) Wichtige Straßen und Autobahnen", pages:"S.26"},
+ // Дополнительно:
+ {key:"tarif", title:"Wiener Tarif (zusätzlich)", pages:"S.58–61"},
+ {key:"stvo",  title:"StVO (Auszug für Taxi)", pages:"S.62–75"},
+ {key:"kfg",   title:"KFG (Kraftfahrgesetz) – Pflichtfragen", pages:"S.76–80"},
+ {key:"arbeit",title:"Arbeits- und Sozialrecht", pages:"S.84–95"}
 ];
 
+// ПОЛНЫЕ ВОПРОСЫ ДЛЯ ВСЕХ ТЕМ С ПРОВЕРЕННЫМИ КООРДИНАТАМИ
 const DEFAULT_QUESTIONS = {
-  orte: [
-    { name:"Parlament", question:"Wo befindet sich das Parlament?", options:["1., Dr.-Karl-Renner-Ring 3","1., Ballhausplatz 2","1., Herrengasse 7","1., Stubenring 1"], correct:0, coords:[48.2079,16.3593] },
-    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["1., Ballhausplatz 2","1., Herrengasse 7","1., Minoritenplatz 5","1., Johannesgasse 5"], correct:0, coords:[48.2084,16.3637] },
-    { name:"Bundespräsident", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["1., Ballhausplatz 1","1., Herrengasse 7","1., Hofburg","1., Minoritenplatz 8"], correct:0, coords:[48.2081,16.3640] },
-    { name:"BM Inneres", question:"Wo befindet sich das BM für Inneres?", options:["1., Herrengasse 7","1., Johannesgasse 5","1., Stubenring 1","1., Minoritenplatz 5"], correct:0, coords:[48.2093,16.3659] },
-    { name:"BM Justiz", question:"Wo befindet sich das BM für Justiz?", options:["7., Museumstraße 7","1., Herrengasse 7","1., Johannesgasse 5","1., Stubenring 1"], correct:0, coords:[48.2058,16.3551] },
-    { name:"Verfassungsgerichtshof", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["1., Freyung 8","1., Schmerlingplatz 10-11","1., Judenplatz 11","3., Radetzkystraße 2"], correct:0, coords:[48.2115,16.3655] },
-    { name:"OGH", question:"Wo befindet sich der Oberste Gerichtshof?", options:["1., Schmerlingplatz 10-11","8., Landesgerichtsstraße 11","1., Freyung 8","1., Judenplatz 11"], correct:0, coords:[48.2095,16.3585] },
-    { name:"Bundespolizeidirektion", question:"Wo befindet sich die Bundespolizeidirektion Wien?", options:["1., Schottenring 7-9","8., Hernalser Gürtel 6-12","3., Dietrichgasse 27","1., Deutschmeisterplatz 3"], correct:0, coords:[48.2180,16.3630] },
-    { name:"Verkehrsamt", question:"Wo befindet sich das Verkehrsamt (Führerschein/Taxilenker)?", options:["3., Dietrichgasse 27","1., Schottenring 7-9","8., Hernalser Gürtel 6-12","1., Wipplingerstraße 34"], correct:0, coords:[48.1929,16.4075] },
-    { name:"PI Innere Stadt", question:"Wo liegt die PI Innere Stadt?", options:["1., Deutschmeisterplatz 3","1., Mariahlifer Straße 1","8., Landesgerichtsstraße 11","1., Herrengasse 7"], correct:0, coords:[48.2146,16.3777] },
-    { name:"Hauptpost", question:"Wo befindet sich die Hauptpost?", options:["1., Fleischmarkt 19","1., Herrengasse 7","1., Schwedenplatz 2","1., Kärntner Straße 1"], correct:0, coords:[48.2090,16.3750] },
-    { name:"Hotel Sacher", question:"Wo befindet sich das Hotel Sacher?", options:["1., Philharmonikerstraße 4","1., Kärntner Ring 1","3., Am Heumarkt 35-37","1., Albertinaplatz 1"], correct:0, coords:[48.2039,16.3692] },
-    { name:"Café Central", question:"Café Central liegt …", options:["1., Herrengasse 14","1., Rathausplatz 1","1., Judenplatz 11","1., Albertinaplatz 1"], correct:0, coords:[48.2108,16.3653] },
-    { name:"Café Landtmann", question:"Café Landtmann liegt …", options:["1., Universitätsring 4","1., Opernring 2","1., Kärntner Straße 10","1., Schwarzenbergplatz 1"], correct:0, coords:[48.2107,16.3604] },
-    { name:"Heurigenort 19", question:"Zum 19. Bezirk gehört als Heurigenort …", options:["Grinzing","Stammersdorf","Sievering","Jedlesee"], correct:0, coords:[48.2594,16.3359] },
-    { name:"Zentralfriedhof", question:"Wo befindet sich der Haupteingang (Tor 2)?", options:["11., Simmeringer Hauptstraße 234","9., Währinger Gürtel 14","10., Laxenburger Straße 365","8., Hernalser Gürtel 6-12"], correct:0, coords:[48.1528,16.4337] },
-    { name:"AKH Wien", question:"Wo befindet sich das AKH?", options:["9., Währinger Gürtel 18-20","3., Landstraßer Hauptstraße 1","13., Schönbrunner Straße 100","1., Kärntner Ring 1"], correct:0, coords:[48.2202,16.3451] },
-    { name:"Burgtheater", question:"Adresse vom Burgtheater?", options:["1., Universitätsring 2","1., Opernring 2","1., Kärntner Straße 1","1., Schottenring 10"], correct:0, coords:[48.2105,16.3600] },
-    { name:"Staatsoper", question:"Adresse von der Staatsoper?", options:["1., Opernring 2","1., Universitätsring 2","1., Kärntner Straße 1","1., Schottenring 10"], correct:0, coords:[48.2035,16.3692] },
-    { name:"Universität Wien", question:"Adresse der Universität Wien?", options:["1., Universitätsring 1","4., Karlsplatz 13","1., Schottenring 8","1., Schillerplatz 3"], correct:0, coords:[48.2130,16.3607] },
-    { name:"Albertina", question:"Wo liegt die Albertina?", options:["1., Albertinaplatz 1","7., Museumsplatz 1","6., Mariahilfer Straße 1","1., Stephansplatz 1"], correct:0, coords:[48.2043,16.3686] },
-    { name:"Stephansdom", question:"Stephansdom liegt am …", options:["1., Stephansplatz","1., Graben","1., Kärntner Straße","1., Ringstraße"], correct:0, coords:[48.2085,16.3730] },
-    { name:"Schloss Schönbrunn", question:"Schloss Schönbrunn liegt …", options:["13., Schönbrunner Schloßstraße 47","3., Prinz-Eugen-Straße 27","1., Stephansplatz","1., Graben"], correct:0, coords:[48.1853,16.3122] }
+  regierungs: [
+    { name:"Parlament", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1","Herrengasse 7","Johannesgasse 5"], correct:0, coords:[48.2079,16.3593] },
+    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Herrengasse 7","Johannesgasse 5","Stubenring 1","Minoritenplatz 3","Rathausplatz 1"], correct:0, coords:[48.2084,16.3637] },
+    { name:"Rathaus", question:"Wo befindet sich das Rathaus?", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8","Ballhausplatz 1","Dr.-Karl-Renner-Ring 3"], correct:0, coords:[48.2105,16.3562] },
+    { name:"Präsidentschaftskanzlei", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1","Minoritenplatz 3","Rathausplatz 1"], correct:0, coords:[48.2081,16.3640] },
+    { name:"BM Inneres", question:"Wo befindet sich das BM für Inneres?", options:["Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2","Minoritenplatz 3","Rathausplatz 1"], correct:0, coords:[48.2093,16.3659] },
+    { name:"BM Justiz", question:"Wo befindet sich das BM für Justiz?", options:["Museumstraße 7","Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2","Minoritenplatz 3"], correct:0, coords:[48.2058,16.3551] },
+    { name:"BM Finanzen", question:"Wo befindet sich das BM für Finanzen?", options:["Johannesgasse 5","Herrengasse 7","Museumstraße 7","Stubenring 1","Ballhausplatz 2","Minoritenplatz 3"], correct:0, coords:[48.2090,16.3790] },
+    { name:"BM Bildung", question:"Wo befindet sich das BM für Bildung?", options:["Minoritenplatz 5","Johannesgasse 5","Herrengasse 7","Museumstraße 7","Stubenring 1","Ballhausplatz 2"], correct:0, coords:[48.2095,16.3630] }
   ],
-
-  betrieb: [
-    { name:"Fahrdienst Tätigkeit", question:"Welche Personen dürfen im Fahrdienst tätig sein?", options:["Nur vertrauenswürdige Personen","Jeder mit Führerschein","Nur Personen über 25 Jahre","Nur österreichische Staatsbürger"], correct:0 },
-    { name:"Lenkverbot", question:"Unter welchen Voraussetzungen ist es dem Lenker untersagt, ein Fahrzeug zu lenken?", options:["Bei Alkohol oder Drogen","Bei Regenwetter","Bei Nachtfahrten","Bei Stau"], correct:0 },
-    { name:"Taxilenkerausweis", question:"Wem ist der Taxilenkerausweis auf Verlangen zur Überprüfung auszuhändigen?", options:["Polizei und Straßenaufsichtsbehörde","Nur dem Fahrgast","Nur dem Arbeitgeber","Niemandem"], correct:0 },
-    { name:"Ausweis Verlust", question:"Wie verhalten Sie sich, wenn Sie den Taxilenkerausweis verloren haben?", options:["Unverzüglich Verlustanzeige machen","Weiterfahren bis zur nächsten Polizeistation","Neuen Ausweis im Internet bestellen","Einen Monat warten"], correct:0 },
-    { name:"Ausweis Ausstellung", question:"Wer hat den Taxilenkerausweis auszustellen?", options:["Zuständige Behörde","Taxiunternehmer","Polizei","Arbeitskammer"], correct:0 },
-    { name:"Tätigkeitsbereich", question:"In welchem örtlichen Bereich darf der Taxilenker seine Tätigkeit ausüben?", options:["Wo er zugelassen ist und Ortskundeprüfung abgelegt hat","In ganz Österreich","Nur in Wien","Nur im 1. Bezirk"], correct:0 },
-    { name:"Mindestalter", question:"Welches Mindestalter müssen Sie für die Ausstellung des Taxilenkerausweis haben?", options:["20 Jahre","18 Jahre","21 Jahre","25 Jahre"], correct:0 },
-    { name:"Probeführerschein", question:"Sie haben einen Probeführerschein. Stellt Ihnen die Behörde einen Taxilenkerausweis aus?", options:["Nein","Ja","Nur mit Genehmigung","Nur für Tagfahrten"], correct:0 },
-    { name:"Alkohol", question:"Wann sind Sie in einem Alkohol beeinträchtigten Zustand?", options:["Bereits nach dem Konsum geringster Mengen (0,0 Promille)","Ab 0,5 Promille","Ab 0,3 Promille","Ab 0,1 Promille"], correct:0 },
-    { name:"Mitführen Ausweis", question:"Müssen Sie Ihren Taxilenkerausweis im Fahrdienst mitführen?", options:["Ja, immer","Nur bei Kontrollen","Nein","Nur nachts"], correct:0 },
-    { name:"Sauberkeit", question:"Welche Pflichten haben Taxilenker bezüglich der Sauberkeit des Taxis?", options:["Außen- und Innenreinigung einschließlich Fenster","Nur Außenreinigung","Nur bei Beschwerden","Nur wöchentlich"], correct:0 },
-    { name:"Rauchverbot", question:"Dürfen Fahrgäste im Taxi rauchen?", options:["Nein, seit 1. Januar 2012 verboten","Ja, immer","Nur mit Erlaubnis des Fahrers","Nur auf Langstrecken"], correct:0 },
-    { name:"Hunde Beförderung", question:"Für welche Hunde besteht eine Beförderungspflicht?", options:["Alle Hunde, wenn nicht aggressiv und mit Maulkorb","Nur kleine Hunde","Nur Blindenhunde","Gar keine Hunde"], correct:0 },
-    { name:"Assistenzhunde", question:"Müssen Assistenzhunde einen Maulkorb tragen?", options:["Nein","Ja","Nur in der Nacht","Nur im 1. Bezirk"], correct:0 },
-    { name:"Gepäckhilfe", question:"Welche Pflichten hat der Taxilenker bezüglich der Gepäckstücke?", options:["Beim Auf- und Abladen behilflich sein","Nur beim Einladen helfen","Gar keine Hilfe","Nur gegen Bezahlung"], correct:0 },
-    { name:"Fahrzeuglänge", question:"Wie lang muss ein Taxi-KFZ mindestens sein?", options:["4,2 Meter","3,8 Meter","4,0 Meter","4,5 Meter"], correct:0 },
-    { name:"Unterlagen", question:"Welche Unterlagen müssen Sie gemäß der Wiener Landesbetriebsordnung mitführen?", options:["Wiener Landesbetriebsordnung, Gewerberegister, Taxitarif","Nur Führerschein","Nur Versicherungsnachweis","Keine besonderen Unterlagen"], correct:0 },
-    { name:"Verhalten im Dienst", question:"Wie hat sich der Taxilenker im Fahrdienst zu verhalten?", options:["Besonnen, rücksichtsvoll, höflich und hilfsbereit","So wie er möchte","Nur höflich zu zahlenden Gästen","Streng und bestimmend"], correct:0 },
-    { name:"Fundgegenstände", question:"Was haben Sie als Taxilenker nach Dienstende zu tun?", options:["Auf Fundgegenstände prüfen und beim Fundservice abgeben","Behalten wenn wertvoll","Nichts","Beim nächsten Fahrgast abgeben"], correct:0 },
-    { name:"Fahrgastverbote", question:"Was ist Fahrgästen bei Taxifahrten untersagt?", options:["Lenker behindern, Türen eigenmächtig öffnen, Fahrzeug beschmutzen","Sprechen","Fenster öffnen","Musik hören"], correct:0 },
-    { name:"Beförderungspflicht", question:"Was verstehen Sie unter Beförderungspflicht?", options:["Pflicht, grundsätzlich jeden Fahrgast innerhalb Wiens zu befördern","Nur nette Fahrgäste befördern","Nur Kurzstrecken befördern","Nur zu bestimmten Zeiten"], correct:0 },
-    { name:"Ausschluss Personen", question:"Welche Personen können Sie von der Beförderung ausschließen?", options:["Personen, die Sicherheit gefährden oder betrunken sind","Ältere Personen","Kinder","Ausländer"], correct:0 },
-    { name:"Taxikennzeichnung", question:"Wie muss ein Taxi gekennzeichnet sein?", options:["Schild mit Aufschrift TAXI in gelber Schrift auf schwarzem Grund","Rotes Licht","Blaues Schild","Keine besondere Kennzeichnung"], correct:0 },
-    { name:"Ersatztaxi", question:"Wie erkennt man ein Ersatztaxi?", options:["Durch Kennzeichen LT und Aufschrift Ersatztaxi","Durch gelbes Licht","Durch besondere Farbe","Gar nicht"], correct:0 },
-    { name:"Ausweis Anbringung", question:"Wo muss der Taxilenkerausweis im Fahrdienst untergebracht werden?", options:["Deutlich sichtbar am Armaturenbrett","In der Tasche","Im Handschuhfach","Am Rückspiegel"], correct:0 },
-    { name:"Beförderungspflicht Ausnahme", question:"Wann besteht innerhalb des Bundeslandes Wien keine Beförderungspflicht?", options:["Bei Bedenken hinsichtlich der Sicherheit","Bei kurzen Strecken","Bei Nacht","Bei Regen"], correct:0 },
-    { name:"Fahrstrecke", question:"Welche Fahrstrecke hat der Taxilenker zum Fahrziel zu wählen?", options:["Die kürzest mögliche oder vom Fahrgast gewünschte Route","Immer die schnellste","Immer die mit wenig Verkehr","Immer die Hauptstraßen"], correct:0 },
-    { name:"Auskünfte", question:"Welche drei Auskünfte muss der Taxifahrer dem Fahrgast geben?", options:["Fahrstrecke, voraussichtliche Dauer, Taxitarif","Nur den Preis","Nur die Strecke","Gar keine"], correct:0 },
-    { name:"Ein-/Aussteigen", question:"Welche Verpflichtungen hat der Taxilenker beim Ein- und Aussteigen der Fahrgäste?", options:["Bei Bedarf behilflich sein","Gar keine","Nur bei älteren Personen","Nur gegen Trinkgeld"], correct:0 },
-    { name:"Wechselgeld", question:"Wie viel Wechselgeld müssen Sie mit sich führen?", options:["Ausreichend für einen 50€ Schein","10€","20€","100€"], correct:0 },
-    { name:"Taxileuchte", question:"Wann darf die Taxileuchte nicht beleuchtet sein?", options:["Bei Fahrgastbeförderung oder bestellten Fahrten","Immer bei Nacht","Nie","Bei Tag"], correct:0 },
-    { name:"Außer Dienst", question:"Wann befindet sich ein Taxi Außer Dienst?", options:["Wenn Aufschrift angebracht und Schild abgedeckt ist","Bei Pause","Bei Nacht","Nie"], correct:0 },
-    { name:"Fahrgastaufnahme", question:"Wo dürfen Sie Fahrgäste aufnehmen?", options:["Taxistandplätzen, bei Bestellungen, Großveranstaltungen","Üall","Nur an Standplätzen","Nur bei Tag"], correct:0 },
-    { name:"Freie Standplatzwahl", question:"Was verstehen Sie unter der freien Standplatzwahl?", options:["Jeder Taxistandplatz innerhalb Wiens kann angefahren werden","Nur bestimmte Standplätze","Nur im eigenen Bezirk","Gar keine Wahl"], correct:0 },
-    { name:"Umherfahren", question:"Dürfen Sie mit Ihrem Taxi umherfahren, um Fahrgäste zu gewinnen?", options:["Nein","Ja","Nur bei Nacht","Nur in Nebenstraßen"], correct:0 },
-    { name:"Fahrgastablehnung", question:"Dürfen Sie Fahrgäste ablehnen?", options:["Nein, außer bei gültigen Ausschließgründen","Ja, immer","Nur bei Nacht","Nur kurze Strecken"], correct:0 },
-    { name:"Standplatz Aufstellung", question:"Wie haben sich Taxis auf den Standplätzen aufzustellen?", options:["Nach Ankunftszeit, platzsparend","Beliebig","Nach Größe","Nach Bezirk"], correct:0 },
-    { name:"Standplatztelefon", question:"Wer darf das Standplatztelefon bedienen?", options:["Lenker des ersten Taxis","Jeder","Nur der Standplatzwart","Der jüngste Fahrer"], correct:0 },
-    { name:"Standplatz Anwesenheit", question:"Wo müssen sich die Taxilenker am Taxistandplatz aufhalten?", options:["Fahrbereit bei ihrem Fahrzeug oder in erreichbarer Nähe","Im Café","Zu Hause","Wo sie wollen"], correct:0 },
-    { name:"Fahrgastwahl", question:"Welches Taxi kann der Fahrgast wählen?", options:["Jedes Taxi aus der Reihe am Standplatz","Nur das erste","Nur das neueste","Nur bestimmte"], correct:0 },
-    { name:"Halteverbot", question:"Dürfen Sie mit dem Taxi bei Großveranstaltungen in einer Halteverbotszone stehen?", options:["Nein","Ja","Nur kurz","Nur nachts"], correct:0 },
-    { name:"Verunreinigung", question:"Welche Pflichten bei Verunreinigungen des Taxis?", options:["Unverzüglich beseitigen","Ignorieren","Nur bei Beschwerden","Wöchentlich reinigen"], correct:0 },
-    { name:"Reifenschaden", question:"Welche Verpflichtungen bei einem Reifenschaden?", options:["Fahrtauftrag mit Ersatzrad fortsetzen können","Taxi stehen lassen","Auf Abschleppdienst warten","Weiterfahren"], correct:0 },
-    { name:"Fahrzeugbeschmutzung", question:"Wenn ein Fahrgast das Taxi beschmutzt, wie verhalten Sie sich?", options:["Angemessenes Entgelt für Reinigung verlangen","Nichts tun","Polizei rufen","Fahrgast ausschimpfen"], correct:0 },
-    { name:"Eigener Hund", question:"Dürfen Sie als Taxilenker Ihren eigenen Hund im Taxi mitbefördern?", options:["Nein","Ja","Nur kleinere Hunde","Nur im Kofferraum"], correct:0 }
+  gerichte: [
+    { name:"OGH", question:"Wo befindet sich der Oberste Gerichtshof?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Herrengasse 7","Ballhausplatz 1","Freyung 8","Judenplatz 11"], correct:0, coords:[48.2095,16.3585] },
+    { name:"Verfassungsgerichtshof", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["Freyung 8","Judenplatz 11","Schmerlingplatz 10-11","Stubenring 1","Ballhausplatz 2","Landesgerichtsstraße 11"], correct:0, coords:[48.2115,16.3655] },
+    { name:"Verwaltungsgerichtshof", question:"Wo befindet sich der Verwaltungsgerichtshof?", options:["Judenplatz 11","Freyung 8","Schmerlingplatz 10-11","Stubenring 1","Ballhausplatz 2","Landesgerichtsstraße 11"], correct:0, coords:[48.2110,16.3690] },
+    { name:"Landesgericht Strafsachen", question:"Wo befindet sich das Landesgericht für Strafsachen?", options:["Landesgerichtsstraße 11","Schmerlingplatz 10-11","Herrengasse 7","Ballhausplatz 1","Freyung 8","Judenplatz 11"], correct:0, coords:[48.2150,16.3500] },
+    { name:"Rechnungshof", question:"Wo befindet sich der Rechnungshof?", options:["Dampfschiffstraße 2","Judenplatz 11","Schmerlingplatz 10-11","Landesgerichtsstraße 11","Freyung 8","Ballhausplatz 1"], correct:0, coords:[48.2070,16.3920] },
+    { name:"Handelsgericht", question:"Wo befindet sich das Handelsgericht?", options:["Marxergasse 1B","Dampfschiffstraße 2","Judenplatz 11","Schmerlingplatz 10-11","Landesgerichtsstraße 11","Freyung 8"], correct:0, coords:[48.2080,16.3840] }
   ],
-
+  bundespolizei: [
+    { name:"Sicherheitsbüro BPD Wien", question:"Wo befindet sich das Sicherheitsbüro der BPD Wien?", options:["Schottenring 7-9","Hernalser Gürtel 6-12","Dierichgasse 27","Laxenburger Straße 36","Wipplingerstraße 34","Mariahilfer Straße 1"], correct:0, coords:[48.2180,16.3630] },
+    { name:"Fremdenpolizei", question:"Wo befindet sich das Fremdenpolizeiliche Büro?", options:["Hernalser Gürtel 6-12","Schottenring 7-9","Dierichgasse 27","Wipplingerstraße 34","Laxenburger Straße 36","Mariahilfer Straße 1"], correct:0, coords:[48.2189,16.3375] },
+    { name:"Verkehrsamt", question:"Wo befindet sich das Verkehrsamt (Führerschein/Taxilenker)?", options:["Dierichgasse 27","Schottenring 7-9","Hernalser Gürtel 6-12","Wagramer Straße 5","Laxenburger Straße 36","Mariahilfer Straße 1"], correct:0, coords:[48.1929,16.4075] },
+    { name:"Bundespolizeidirektion", question:"Wo ist die Bundespolizeidirektion Wien?", options:["Schottenring 7-9","Hernalser Gürtel 6-12","Dierichgasse 27","Laxenburger Straße 36","Wipplingerstraße 34","Mariahilfer Straße 1"], correct:0, coords:[48.2180,16.3630] }
+  ],
+  stadtpolizei: [
+    { name:"PI Innere Stadt", question:"Wo liegt die PI Innere Stadt?", options:["Deutschmeisterplatz 3","Mariahilfer Straße 1","Landesgerichtsstraße 11","Herrengasse 7","Schottenring 7-9","Ballhausplatz 1"], correct:0, coords:[48.2146,16.3777] },
+    { name:"PI Mariahilf", question:"PI Mariahilf – wo?", options:["Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29","Nußdorfer Straße 28","Mariahilfer Straße 1","Gumpendorfer Straße 1"], correct:0, coords:[48.1969,16.3483] },
+    { name:"PI Landstraße", question:"Wo befindet sich die PI Landstraße?", options:["Landstraßer Hauptstraße 29","Amerlingstraße 33","Schönbrunner Straße 59","Nußdorfer Straße 28","Mariahilfer Straße 1","Gumpendorfer Straße 1"], correct:0, coords:[48.1910,16.3910] },
+    { name:"PI Wieden", question:"Wo befindet sich die PI Wieden?", options:["Favoritenstraße 1","Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29","Mariahilfer Straße 1","Gumpendorfer Straße 1"], correct:0, coords:[48.1900,16.3700] },
+    { name:"PI Margareten", question:"Wo befindet sich die PI Margareten?", options:["Strohgasse 7-9","Favoritenstraße 1","Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29","Mariahilfer Straße 1"], correct:0, coords:[48.1880,16.3550] },
+    { name:"PI Favoriten", question:"Wo befindet sich die PI Favoriten?", options:["Quellenstraße 51","Strohgasse 7-9","Favoritenstraße 1","Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29"], correct:0, coords:[48.1730,16.3820] }
+  ],
+  post: [
+    { name:"Hauptpost", question:"Wo befindet sich die Hauptpost?", options:["Fleischmarkt 19","Herrengasse 7","Schwedenplatz 2","Kärntner Straße 1","Mariahilfer Straße 1","Ballhausplatz 1"], correct:0, coords:[48.2090,16.3750] },
+    { name:"Postamt 1010", question:"Wo befindet sich das Postamt 1010?", options:["Wipplingerstraße 32","Fleischmarkt 19","Herrengasse 7","Schwedenplatz 2","Kärntner Straße 1","Mariahilfer Straße 1"], correct:0, coords:[48.2130,16.3670] },
+    { name:"Postamt 1070", question:"Wo befindet sich das Postamt 1070?", options:["Kaiserstraße 55","Wipplingerstraße 32","Fleischmarkt 19","Herrengasse 7","Schwedenplatz 2","Kärntner Straße 1"], correct:0, coords:[48.2020,16.3500] },
+    { name:"Postamt 1150", question:"Wo befindet sich das Postamt 1150?", options:["Mariahilfer Straße 84","Kaiserstraße 55","Wipplingerstraße 32","Fleischmarkt 19","Herrengasse 7","Schwedenplatz 2"], correct:0, coords:[48.1900,16.3380] }
+  ],
+  medien: [
+    { name:"APA", question:"Wo befindet sich APA (IPZ) / Media Print?", options:["Lassallestraße 89","Kirchengasse 1","Schottenring 10","Kärntner Ring 5","Mariahilfer Straße 1","Ballhausplatz 1"], correct:0, coords:[48.2240,16.4150] },
+    { name:"ORF", question:"Wo befindet sich der ORF?", options:["Würzburggasse 30","Lassallestraße 89","Kirchengasse 1","Schottenring 10","Kärntner Ring 5","Mariahilfer Straße 1"], correct:0, coords:[48.1920,16.3330] },
+    { name:"Kronen Zeitung", question:"Wo befindet sich die Kronen Zeitung?", options:["Lassallestraße 26","Würzburggasse 30","Lassallestraße 89","Kirchengasse 1","Schottenring 10","Kärntner Ring 5"], correct:0, coords:[48.2250,16.4100] },
+    { name:"Der Standard", question:"Wo befindet sich Der Standard?", options:["Herrengasse 1","Lassallestraße 26","Würzburggasse 30","Lassallestraße 89","Kirchengasse 1","Schottenring 10"], correct:0, coords:[48.2100,16.3660] }
+  ],
+  kammern: [
+    { name:"Wirtschaftskammer", question:"Wo befindet sich die WKO Wien?", options:["Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2058,16.3797] },
+    { name:"Ärztekammer", question:"Wo befindet sich die Ärztekammer?", options:["Weihburggasse 10-12","Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4","Ballhausplatz 1"], correct:0, coords:[48.2040,16.3770] },
+    { name:"Apothekerkammer", question:"Wo befindet sich die Apothekerkammer?", options:["Spitalgasse 31","Weihburggasse 10-12","Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4"], correct:0, coords:[48.2170,16.3550] },
+    { name:"Rechtsanwaltskammer", question:"Wo befindet sich die Rechtsanwaltskammer?", options:["Rotenturmstraße 13","Spitalgasse 31","Weihburggasse 10-12","Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123"], correct:0, coords:[48.2100,16.3750] }
+  ],
+  bezirksaemter: [
+    { name:"Bezirksamt 1", question:"Amtshaus des 1. Bezirks liegt …", options:["Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8","Ballhausplatz 1","Stubenring 1"], correct:0, coords:[48.2134,16.3686] },
+    { name:"Bezirksamt 6", question:"Amtshaus des 6. Bezirks liegt …", options:["Gumpendorfer Straße 1","Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8","Ballhausplatz 1"], correct:0, coords:[48.1960,16.3500] },
+    { name:"Bezirksamt 7", question:"Amtshaus des 7. Bezirks liegt …", options:["Hermanngasse 24-26","Gumpendorfer Straße 1","Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8"], correct:0, coords:[48.2030,16.3500] },
+    { name:"Bezirksamt 8", question:"Amtshaus des 8. Bezirks liegt …", options:["Lange Gasse 37","Hermanngasse 24-26","Gumpendorfer Straße 1","Wipplingerstraße 8","Rathausplatz 1","Schottenring 10"], correct:0, coords:[48.2100,16.3480] },
+    { name:"Bezirksamt 9", question:"Amtshaus des 9. Bezirks liegt …", options:["Währinger Straße 43","Lange Gasse 37","Hermanngasse 24-26","Gumpendorfer Straße 1","Wipplingerstraße 8","Rathausplatz 1"], correct:0, coords:[48.2200,16.3570] }
+  ],
+  hotels: [
+    { name:"Hotel Sacher", question:"Wo befindet sich das Hotel Sacher?", options:["Philharmonikerstraße 4","Kärntner Ring 1","Am Heumarkt 35-37","Albertinaplatz 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2039,16.3692] },
+    { name:"Hilton Vienna Park", question:"Wo befindet sich Hilton Vienna Park?", options:["Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2055,16.3828] },
+    { name:"Hotel Imperial", question:"Wo befindet sich das Hotel Imperial?", options:["Kärntner Ring 16","Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2","Ballhausplatz 1"], correct:0, coords:[48.2025,16.3675] },
+    { name:"Hotel Bristol", question:"Wo befindet sich das Hotel Bristol?", options:["Kärntner Ring 1","Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2","Ballhausplatz 1"], correct:0, coords:[48.2030,16.3720] },
+    { name:"Hotel InterContinental", question:"Wo befindet sich das Hotel InterContinental?", options:["Johannesgasse 28","Kärntner Ring 1","Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2"], correct:0, coords:[48.2070,16.3790] },
+    { name:"Hotel Marriott", question:"Wo befindet sich das Hotel Marriott?", options:["Parkring 12A","Johannesgasse 28","Kärntner Ring 1","Am Stadtpark 1","Wagramer Straße 8","Schottenring 1"], correct:0, coords:[48.2080,16.3800] }
+  ],
+  cafes: [
+    { name:"Café Central", question:"Café Central liegt …", options:["Herrengasse 14","Rathausplatz 1","Judenplatz 11","Albertinaplatz 1","Ballhausplatz 1","Stubenring 1"], correct:0, coords:[48.2108,16.3653] },
+    { name:"Café Landtmann", question:"Café Landtmann liegt …", options:["Universitätsring 4","Opernring 2","Kärntner Straße 10","Schwarzenbergplatz 1","Ballhausplatz 1","Stubenring 1"], correct:0, coords:[48.2107,16.3604] },
+    { name:"Café Demel", question:"Café Demel liegt …", options:["Kohlmarkt 14","Universitätsring 4","Opernring 2","Kärntner Straße 10","Schwarzenbergplatz 1","Ballhausplatz 1"], correct:0, coords:[48.2085,16.3675] },
+    { name:"Café Hawelka", question:"Café Hawelka liegt …", options:["Dorotheergasse 6","Kohlmarkt 14","Universitätsring 4","Opernring 2","Kärntner Straße 10","Schwarzenbergplatz 1"], correct:0, coords:[48.2080,16.3685] },
+    { name:"Café Museum", question:"Café Museum liegt …", options:["Operngasse 7","Dorotheergasse 6","Kohlmarkt 14","Universitätsring 4","Opernring 2","Kärntner Straße 10"], correct:0, coords:[48.2030,16.3670] },
+    { name:"Café Sacher", question:"Café Sacher liegt …", options:["Philharmonikerstraße 4","Operngasse 7","Dorotheergasse 6","Kohlmarkt 14","Universitätsring 4","Opernring 2"], correct:0, coords:[48.2039,16.3692] }
+  ],
+  heurige: [
+    { name:"Heurigenort 19", question:"Zum 19. Bezirk gehört als Heurigenort …", options:["Grinzing","Stammersdorf","Sievering","Jedlesee","Heiligenstadt","Nussdorf"], correct:0, coords:[48.2594,16.3359] },
+    { name:"Heurigenort 21", question:"Zum 21. Bezirk gehört als Heurigenort …", options:["Stammersdorf","Grinzing","Sievering","Jedlesee","Heiligenstadt","Nussdorf"], correct:0, coords:[48.3060,16.4140] },
+    { name:"Heurigenort 22", question:"Zum 22. Bezirk gehört als Heurigenort …", options:["Jedlesee","Grinzing","Stammersdorf","Sievering","Heiligenstadt","Nussdorf"], correct:0, coords:[48.2780,16.3920] },
+    { name:"Heurigenort 19b", question:"Welcher Heurigenort liegt im 19. Bezirk?", options:["Sievering","Stammersdorf","Jedlesee","Kagran","Essling","Aspern"], correct:0, coords:[48.2480,16.3200] },
+    { name:"Heurigenort 21b", question:"Welcher Heurigenort liegt im 21. Bezirk?", options:["Stammersdorf","Grinzing","Sievering","Jedlesee","Kagran","Essling"], correct:0, coords:[48.3060,16.4140] }
+  ],
+  friedhoefe: [
+    { name:"Zentralfriedhof", question:"Wo befindet sich der Haupteingang (Tor 2)?", options:["Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.1528,16.4337] },
+    { name:"Friedhof St. Marx", question:"Wo befindet sich der Friedhof St. Marx?", options:["Leberstraße 6-8","Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12","Ballhausplatz 1"], correct:0, coords:[48.1820,16.4020] },
+    { name:"Friedhof Hietzing", question:"Wo befindet sich der Friedhof Hietzing?", options:["Maxingstraße 15","Leberstraße 6-8","Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12"], correct:0, coords:[48.1870,16.2960] },
+    { name:"Friedhof Neustift", question:"Wo befindet sich der Friedhof Neustift?", options:["Neustift am Walde 68","Maxingstraße 15","Leberstraße 6-8","Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365"], correct:0, coords:[48.2480,16.2950] },
+    { name:"Friedhof Döbling", question:"Wo befindet sich der Friedhof Döbling?", options:["Grinzinger Straße 82","Neustift am Walde 68","Maxingstraße 15","Leberstraße 6-8","Simmeringer Hauptstraße 234","Währinger Gürtel 14"], correct:0, coords:[48.2520,16.3450] }
+  ],
+  kranken: [
+    { name:"AKH Wien", question:"Wo befindet sich das AKH?", options:["Währinger Gürtel 18-20","Landstraßer Hauptstraße 1","Schönbrunner Straße 100","Kärntner Ring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2202,16.3451] },
+    { name:"SMZ Süd", question:"Adresse des SMZ Süd?", options:["Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.1589,16.3702] },
+    { name:"Rudolfinerhaus", question:"Wo befindet sich das Rudolfinerhaus?", options:["Billrothstraße 78","Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10","Ballhausplatz 1"], correct:0, coords:[48.2330,16.3500] },
+    { name:"Krankenhaus Hietzing", question:"Wo befindet sich das Krankenhaus Hietzing?", options:["Wolkersbergenstraße 1","Billrothstraße 78","Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10"], correct:0, coords:[48.1780,16.2600] },
+    { name:"Krankenhaus Lainz", question:"Wo befindet sich das Krankenhaus Lainz?", options:["Wolkersbergenstraße 1","Billrothstraße 78","Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10"], correct:0, coords:[48.1680,16.2780] },
+    { name:"Krankenhaus Nord", question:"Wo befindet sich das Krankenhaus Nord?", options:["Brünner Straße 1","Wolkersbergenstraße 1","Billrothstraße 78","Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23"], correct:0, coords:[48.2780,16.4000] }
+  ],
+  pension: [
+    { name:"Pensionistenwohnheim 9", question:"Wohnheim in der Seegasse liegt im …", options:["9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk","1. Bezirk","7. Bezirk"], correct:0, coords:[48.2217,16.3617] },
+    { name:"Pensionistenwohnheim 16", question:"Wohnheim in der Herbststraße liegt im …", options:["16. Bezirk","9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk","1. Bezirk"], correct:0, coords:[48.2180,16.3080] },
+    { name:"Pensionistenwohnheim 18", question:"Wohnheim in der Gentzgasse liegt im …", options:["18. Bezirk","16. Bezirk","9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk"], correct:0, coords:[48.2250,16.3200] },
+    { name:"Pensionistenwohnheim 10", question:"Wohnheim in der Laxenburger Straße liegt im …", options:["10. Bezirk","18. Bezirk","16. Bezirk","9. Bezirk","3. Bezirk","15. Bezirk"], correct:0, coords:[48.1650,16.3700] }
+  ],
+  kultur: [
+    { name:"Burgtheater", question:"Adresse vom Burgtheater?", options:["Universitätsring 2","Opernring 2","Kärntner Straße 1","Schottenring 10","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2105,16.3600] },
+    { name:"Staatsoper", question:"Adresse von der Staatsoper?", options:["Opernring 2","Universitätsring 2","Kärntner Straße 1","Schottenring 10","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2035,16.3692] },
+    { name:"Volksoper", question:"Adresse von der Volksoper?", options:["Währinger Straße 78","Opernring 2","Universitätsring 2","Kärntner Straße 1","Schottenring 10","Ballhausplatz 1"], correct:0, coords:[48.2300,16.3500] },
+    { name:"Konzerthaus", question:"Adresse vom Konzerthaus?", options:["Lothringerstraße 20","Währinger Straße 78","Opernring 2","Universitätsring 2","Kärntner Straße 1","Schottenring 10"], correct:0, coords:[48.2005,16.3760] },
+    { name:"Theater an der Wien", question:"Adresse vom Theater an der Wien?", options:["Linke Wienzeile 6","Lothringerstraße 20","Währinger Straße 78","Opernring 2","Universitätsring 2","Kärntner Straße 1"], correct:0, coords:[48.1990,16.3540] },
+    { name:"Raimund Theater", question:"Adresse vom Raimund Theater?", options:["Wallgasse 18-20","Linke Wienzeile 6","Lothringerstraße 20","Währinger Straße 78","Opernring 2","Universitätsring 2"], correct:0, coords:[48.1970,16.3380] }
+  ],
+  kabarett: [
+    { name:"Kabarett Simpl", question:"Wo ist das Kabarett Simpl?", options:["Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2079,16.3772] },
+    { name:"Kabarett Niedermair", question:"Wo ist das Kabarett Niedermair?", options:["Laudongasse 36","Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14","Ballhausplatz 1"], correct:0, coords:[48.2130,16.3520] },
+    { name:"Kabarett Vindobona", question:"Wo ist das Kabarett Vindobona?", options:["Walfischgasse 4","Laudongasse 36","Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14"], correct:0, coords:[48.2040,16.3680] },
+    { name:"Kabarett Stadl", question:"Wo ist das Kabarett Stadl?", options:["Hernalser Hauptstraße 55","Walfischgasse 4","Laudongasse 36","Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1"], correct:0, coords:[48.2230,16.3300] }
+  ],
+  unis: [
+    { name:"Universität Wien", question:"Adresse der Universität Wien?", options:["Universitätsring 1","Karlsplatz 13","Schottenring 8","Schillerplatz 3","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2130,16.3607] },
+    { name:"TU Wien", question:"Adresse der Technischen Universität Wien?", options:["Karlsplatz 13","Universitätsring 1","Währinger Straße 25","Schottenring 10","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.1995,16.3690] },
+    { name:"Wirtschaftsuniversität", question:"Adresse der Wirtschaftsuniversität?", options:["Welthandelsplatz 1","Karlsplatz 13","Universitätsring 1","Währinger Straße 25","Schottenring 10","Ballhausplatz 1"], correct:0, coords:[48.2135,16.4160] },
+    { name:"Medizinische Universität", question:"Adresse der Medizinischen Universität?", options:["Spitalgasse 23","Welthandelsplatz 1","Karlsplatz 13","Universitätsring 1","Währinger Straße 25","Schottenring 10"], correct:0, coords:[48.2200,16.3500] },
+    { name:"Universität für Musik", question:"Adresse der Universität für Musik?", options:["Anton-von-Webern-Platz 1","Spitalgasse 23","Welthandelsplatz 1","Karlsplatz 13","Universitätsring 1","Währinger Straße 25"], correct:0, coords:[48.1980,16.3690] },
+    { name:"Akademie der bildenden Künste", question:"Adresse der Akademie der bildenden Künste?", options:["Schillerplatz 3","Anton-von-Webern-Platz 1","Spitalgasse 23","Welthandelsplatz 1","Karlsplatz 13","Universitätsring 1"], correct:0, coords:[48.2020,16.3640] }
+  ],
+  museen: [
+    { name:"Albertina", question:"Wo liegt die Albertina?", options:["Albertinaplatz 1","Museumsplatz 1","Mariahilfer Straße 1","Stephansplatz 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2043,16.3686] },
+    { name:"Naturhistorisches Museum", question:"Wo liegt das NHM?", options:["Maria-Theresien-Platz","Heldenplatz","Museumsplatz 1","Burgring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2056,16.3613] },
+    { name:"Kunsthistorisches Museum", question:"Wo liegt das KHM?", options:["Maria-Theresien-Platz","Heldenplatz","Museumsplatz 1","Burgring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2037,16.3618] },
+    { name:"MUMOK", question:"Wo liegt das MUMOK?", options:["Museumsplatz 1","Maria-Theresien-Platz","Heldenplatz","Burgring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2035,16.3585] },
+    { name:"Leopold Museum", question:"Wo liegt das Leopold Museum?", options:["Museumsplatz 1","Maria-Theresien-Platz","Heldenplatz","Burgring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2040,16.3590] },
+    { name:"Weltmuseum Wien", question:"Wo liegt das Weltmuseum Wien?", options:["Heldenplatz","Museumsplatz 1","Maria-Theresien-Platz","Burgring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2058,16.3636] }
+  ],
+  bauten: [
+    { name:"Hofburg", question:"Hofburg/Heldenplatz gehört zu …", options:["Ringstraße","Kärntnerring","Gürtel","Franz-Josefs-Kai","Ballhausplatz","Rathausplatz"], correct:0, coords:[48.2066,16.3636] },
+    { name:"Stephansdom", question:"Stephansdom liegt am …", options:["Stephansplatz","Graben","Kärntner Straße","Ringstraße","Ballhausplatz","Rathausplatz"], correct:0, coords:[48.2085,16.3730] },
+    { name:"Belvedere", question:"Belvedere liegt …", options:["Prinz-Eugen-Straße 27","Stephansplatz","Graben","Kärntner Straße","Ringstraße","Ballhausplatz"], correct:0, coords:[48.1915,16.3810] },
+    { name:"Schloss Schönbrunn", question:"Schloss Schönbrunn liegt …", options:["Schönbrunner Schloßstraße 47","Prinz-Eugen-Straße 27","Stephansplatz","Graben","Kärntner Straße","Ringstraße"], correct:0, coords:[48.1853,16.3122] },
+    { name:"Hundertwasserhaus", question:"Hundertwasserhaus liegt …", options:["Kegelgasse 36-38","Schönbrunner Schloßstraße 47","Prinz-Eugen-Straße 27","Stephansplatz","Graben","Kärntner Straße"], correct:0, coords:[48.2070,16.3940] },
+    { name:"UNO-City", question:"UNO-City liegt …", options:["Wagramer Straße 5","Kegelgasse 36-38","Schönbrunner Schloßstraße 47","Prinz-Eugen-Straße 27","Stephansplatz","Graben"], correct:0, coords:[48.2330,16.4160] }
+  ],
+  guertel: [
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Mariahilfer Straße)", options:["innerer Gürtel","äußerer Gürtel"], correct:0, coords:[48.1956,16.3394] },
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Nußdorfer Straße)", options:["innerer Gürtel","äußerer Gürtel"], correct:0, coords:[48.2332,16.3554] },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den Gürtel gequert haben?", options:["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße","Gumpendorfer Straße","Lerchenfelder Straße"], correct:0, coords:[48.1935,16.3354] },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den Gürtel gequert haben?", options:["Gablenzgasse","Lerchenfelder Gürtel","Thaliastraße","Mariahilfer Straße","Sechshauser Straße","Gumpendorfer Straße"], correct:0, coords:[48.2058,16.3389] },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Lerchenfelder Straße über den Gürtel gequert haben?", options:["Thaliastraße","Gablenzgasse","Lerchenfelder Gürtel","Mariahilfer Straße","Sechshauser Straße","Gumpendorfer Straße"], correct:0, coords:[48.2094,16.3367] },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Hernalser Hauptstraße über den Gürtel gequert haben?", options:["Ottakringer Straße","Thaliastraße","Gablenzgasse","Lerchenfelder Gürtel","Mariahilfer Straße","Sechshauser Straße"], correct:0, coords:[48.2185,16.3326] }
+  ],
+  donau: [
+    { name:"Schwedenbrücke", question:"Welche Brücke verbindet Rotenturmstraße mit der Taborstraße?", options:["Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke","Reichsbrücke","Floridsdorfer Brücke"], correct:0, coords:[48.2125,16.3783] },
+    { name:"Reichsbrücke", question:"Welche Brücke verbindet die Innere Stadt mit der Donaustadt?", options:["Reichsbrücke","Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke","Floridsdorfer Brücke"], correct:0, coords:[48.2310,16.4140] },
+    { name:"Floridsdorfer Brücke", question:"Welche Brücke verbindet Brigittenau mit Floridsdorf?", options:["Floridsdorfer Brücke","Reichsbrücke","Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke"], correct:0, coords:[48.2500,16.3900] },
+    { name:"Augartenbrücke", question:"Welche Brücke verbindet Leopoldstadt mit Brigittenau?", options:["Augartenbrücke","Floridsdorfer Brücke","Reichsbrücke","Schwedenbrücke","Aspernbrücke","Salztorbrücke"], correct:0, coords:[48.2280,16.3730] },
+    { name:"Rotundenbrücke", question:"Welche Brücke verbindet Prater mit Donaustadt?", options:["Rotundenbrücke","Augartenbrücke","Floridsdorfer Brücke","Reichsbrücke","Schwedenbrücke","Aspernbrücke"], correct:0, coords:[48.2130,16.4080] }
+  ],
+  nummern: [
+    { name:"Nummerierung", question:"Wie werden die Häuser in Wien nummeriert?", options:["Ungerade links / gerade rechts stadtauswärts","Gerade links / ungerade rechts stadtauswärts","Fortlaufend im Uhrzeigersinn","Nur ungerade Nummern in Wien","Alphabetisch nach Straßennamen","Nach Bezirksnummern"], correct:0, coords:[48.206,16.372] },
+    { name:"Bezirksnummern", question:"Wie sind die Bezirke in Wien nummeriert?", options:["Im Uhrzeigersinn um den 1. Bezirk","Nach Einwohnerzahl","Alphabetisch","Nach Gründungsdatum","Nach Flächengröße","Zufällig"], correct:0, coords:[48.206,16.372] }
+  ],
+  strassgeo: [
+    { name:"Praterstern", question:"Nennen Sie zwei stadtauswärts führende Straßen vom Praterstern.", options:["Praterstraße & Ausstellungsstraße","Kärntner Straße & Opernring","Mariahilfer Straße & Burggasse","Währinger Straße & Hernalser Hauptstraße","Ringstraße & Franz-Josefs-Kai","Donaukanalstraße & Schwedenplatz"], correct:0, coords:[48.2167,16.3925] },
+    { name:"Schwarzenbergplatz", question:"Welche Straßen führen vom Schwarzenbergplatz weg?", options:["Ringstraße & Lothringerstraße","Kärntner Straße & Opernring","Mariahilfer Straße & Burggasse","Währinger Straße & Hernalser Hauptstraße","Praterstraße & Ausstellungsstraße","Donaukanalstraße & Schwedenplatz"], correct:0, coords:[48.2020,16.3750] },
+    { name:"Westbahnhof", question:"Welche Straßen führen vom Westbahnhof weg?", options:["Mariahilfer Straße & Europaplatz","Gürtel & Mariahilfer Straße","Lerchenfelder Straße & Burggasse","Thaliastraße & Gablenzgasse","Sechshauser Straße & Gumpendorfer Straße","Neubaugürtel & Mariahilfer Gürtel"], correct:0, coords:[48.1965,16.3380] }
+  ],
+  wichtige: [
+    { name:"Ringstraße", question:"Zum Ring gehören …", options:["Opernring / Burgring / Universitätsring","Kärntner Straße / Graben","Gürtel / Triester Straße","Donauufer Autobahn","Praterstraße / Ausstellungsstraße","Mariahilfer Straße / Neubaugürtel"], correct:0, coords:[48.2053,16.3685] },
+    { name:"Gürtel", question:"Welche Gürtelteile gehören zum Gürtel?", options:["Mariahilfer Gürtel / Währinger Gürtel / Lerchenfelder Gürtel","Ringstraße / Franz-Josefs-Kai","Kärntner Straße / Graben","Praterstraße / Ausstellungsstraße","Donauufer Autobahn / Südosttangente","Triester Straße / Prager Straße"], correct:0, coords:[48.2000,16.3400] },
+    { name:"Südosttangente", question:"Was ist die Südosttangente?", options:["A23 Autobahn","Gürtel","Ringstraße","Donauufer Autobahn","Westautobahn","Südautobahn"], correct:0, coords:[48.1600,16.4200] },
+    { name:"Westautobahn", question:"Wo beginnt die Westautobahn in Wien?", options:["Auhof","Hietzing","Penzing","Ottakring","Hernals","Währing"], correct:0, coords:[48.2080,16.2530] }
+  ],
   tarif: [
-    { name:"Grundtaxe Tag", question:"Wie hoch ist die Grundtaxe am Tag?", options:["3,80 €","4,30 €","3,50 €","2,90 €"], correct:0 },
-    { name:"Grundtaxe Nacht", question:"Wie hoch ist die Grundtaxe nachts/So/Feiertag?", options:["4,30 €","3,80 €","5,00 €","4,90 €"], correct:0 },
-    { name:"Zeittaxe", question:"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?", options:["34,80 €","28,00 €","40,00 €","25,00 €"], correct:0 },
-    { name:"Streckentaxe Tag bis 5km", question:"Wie hoch ist die Streckentaxe für die ersten 5 Kilometer am Tag?", options:["0,95 € pro km","1,09 € pro km","0,58 € pro km","0,67 € pro km"], correct:0 },
-    { name:"Streckentaxe Tag ab 5km", question:"Wie hoch ist die Streckentaxe ab dem 5. Kilometer am Tag?", options:["0,58 € pro km","0,95 € pro km","1,09 € pro km","0,67 € pro km"], correct:0 },
-    { name:"Streckentaxe Nacht bis 5km", question:"Wie hoch ist die Streckentaxe für die ersten 5 Kilometer in der Nacht?", options:["1,09 € pro km","0,95 € pro km","0,58 € pro km","0,67 € pro km"], correct:0 },
-    { name:"Streckentaxe Nacht ab 5km", question:"Wie hoch ist die Streckentaxe ab dem 5. Kilometer in der Nacht?", options:["0,67 € pro km","0,95 € pro km","1,09 € pro km","0,58 € pro km"], correct:0 },
-    { name:"Zuschlag", question:"Wie hoch ist ein Zuschlag?", options:["2,00 €","3,00 €","1,00 €","5,00 €"], correct:0 },
-    { name:"Taxameter Versagen", question:"Bei Versagen des Fahrpreisanzeigers während der Fahrt. Wie verhalten Sie sich?", options:["Fahrgast sofort informieren, keine neuen Fahrgäste","Weiterfahren wie bisher","Taxameter reparieren","Fahrt abbrechen"], correct:0 },
-    { name:"Sonn- und Feiertagstarif", question:"In welcher Zeitspanne gilt der Sonn- und Feiertagstarif?", options:["0:00 bis 24:00 Uhr","6:00 bis 22:00 Uhr","8:00 bis 20:00 Uhr","10:00 bis 18:00 Uhr"], correct:0 },
-    { name:"Nachtarif", question:"In welcher Zeitspanne gilt der Nachtarif?", options:["23:00 bis 6:00 Uhr","22:00 bis 5:00 Uhr","0:00 bis 6:00 Uhr","20:00 bis 6:00 Uhr"], correct:0 },
-    { name:"Bestellte Fahrten", question:"Was sind bestellte Fahrten?", options:["Fahrten die im Voraus gebucht werden","Alle Fahrten","Nur Flughafenfahrten","Nur Langstrecken"], correct:0 },
-    { name:"Tarifverordnung", question:"Wer verordnet den Wiener Taxitarif?", options:["Landeshauptmann (Bürgermeister)","Polizei","Taxiunternehmer","Verkehrsministerium"], correct:0 },
-    { name:"Fahrt kurz durch NÖ", question:"Sie fahren mit einem Fahrgast auf eine Wiener Zieladresse, die Strecke führt kurz durch Niederösterreich. Welchen Fahrpreis verrechnen Sie?", options:["Laut Taximeter","Doppelter Tarif","Freie Vereinbarung","Pauschalpreis"], correct:0 },
-    { name:"Fahrtauftrag nach NÖ", question:"Sie erhalten einen Fahrtauftrag nach Korneuburg/NÖ. Wie berechnen Sie den Fahrpreis?", options:["Freie Vereinbarung oder ab Stadtgrenze doppelte Streckentaxe","Immer Pauschalpreis","Immer Taximeter","Immer freie Vereinbarung"], correct:0 },
-    { name:"Außerhalb Tarifgebiet", question:"Sie erhalten einen Fahrtauftrag zu einem Zielort außerhalb des Tarifgebietes. Müssen Sie diesen Fahrtauftrag annehmen?", options:["Nein","Ja","Nur tagsüber","Nur wenn es passt"], correct:0 },
-    { name:"Taxameter einschalten", question:"Wann schalten Sie den Taxameter ein, wenn Sie einen Fahrtauftrag vom Standplatztelefon übernehmen?", options:["Wenn der Kunde einsteigt oder nach 2 Minuten Wartezeit","Sofort bei Annahme","Erst bei Fahrtbeginn","Gar nicht"], correct:0 },
-    { name:"Tarif Zusammensetzung", question:"Wie setzt sich der Wiener Taxitarif zusammen?", options:["Grundtaxe, Streckentaxe, Zeittaxe, Zuschläge","Nur Grundtaxe und Streckentaxe","Pauschalpreis","Nach Kilometer"], correct:0 },
-    { name:"Tarifgültigkeit", question:"Wo verliert der Wiener Taxitarif seine Gültigkeit?", options:["Ab der Ortsgrenze","An der Stadtgrenze","Im 23. Bezirk","Nirgends"], correct:0 },
-    { name:"Nichtantritt Fahrt", question:"Welcher Betrag darf verrechnet werden, wenn der Fahrgast die Fahrt aus eigenem Verschulden nicht antritt?", options:["Grundgebühr, Zuschlag und Zeittaxe","Voller Fahrpreis","Nichts","Hälfte des Fahrpreises"], correct:0 },
-    { name:"Botenfahrten", question:"Wie werden Botenfahrten verrechnet?", options:["Freie Vereinbarung oder laut Taxameter","Immer Pauschalpreis","Immer Taximeter","Immer halber Preis"], correct:0 }
+    { name:"Grundtaxe", question:"Wie hoch ist die Grundtaxe am Tag?", options:["3,80 €","4,30 €","3,50 €","2,90 €","5,00 €","4,80 €"], correct:0 },
+    { name:"Grundtaxe Nacht", question:"Wie hoch ist die Grundtaxe nachts/So/Feiertag?", options:["4,30 €","3,80 €","5,00 €","4,90 €","3,50 €","4,00 €"], correct:0 },
+    { name:"Kilometerpreis", question:"Wie viel kostet der Kilometer nach Tarif 2?", options:["1,80 €","2,10 €","1,50 €","2,50 €","1,30 €","1,95 €"], correct:0 },
+    { name:"Wartezeit", question:"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?", options:["34,80 €","28,00 €","40,00 €","20,00 €","30,00 €","25,00 €"], correct:0 },
+    { name:"Nachtzuschlag", question:"Ab wann gilt der Nachtzuschlag?", options:["23:00–06:00","22:00–05:00","00:00–06:00","21:00–05:00","22:30–05:30","23:30–06:30"], correct:0 },
+    { name:"Gepäck", question:"Was kostet ein Gepäckstück?", options:["Kostenlos","0,50 €","1,00 €","1,50 €","2,00 €","2,50 €"], correct:0 }
   ],
-
   stvo: [
-    { name:"Wohnstraße", question:"Dürfen Taxis durch Wohnstraßen durchfahren?", options:["Nur mit Schrittgeschwindigkeit","Ja, ohne Einschränkung","Nein, verboten","Nur tagsüber"], correct:0 },
-    { name:"Einsatzfahrzeug", question:"Was ist ein Einsatzfahrzeug?", options:["Fahrzeug mit Blaulicht und Folgetonhorn","Jedes Polizeiauto","Nur Rettungswagen","Feuerwehrauto"], correct:0 },
-    { name:"Verhalten Einsatzfahrzeug", question:"Wie verhalten Sie sich gegenüber einem Einsatzfahrzeug?", options:["Platz machen für Durchfahrt","Weiterfahren wie bisher","Schneller fahren","Anhalten wo man ist"], correct:0 },
-    { name:"Halten Definition", question:"Was verstehen Sie unter Halten?", options:["Abstellen für max. 10 Minuten oder Ladetätigkeit","Parken länger als 10 Minuten","Stehenbleiben an Ampeln","Warten auf Fahrgäste"], correct:0 },
-    { name:"Parken Definition", question:"Was verstehen Sie unter Parken?", options:["Halten länger als 10 Minuten oder über Ladetätigkeit hinaus","Kurzes Anhalten","Warten an Ampeln","Ein- und Aussteigen lassen"], correct:0 },
-    { name:"Vorbeifahren Definition", question:"Wann liegt ein Vorbeifahren vor?", options:["An stehenden Fahrzeugen, Personen oder Objekten vorbeibewegen","An fahrenden Fahrzeugen vorbeifahren","Überholen auf Autobahn","Links abbiegen"], correct:0 },
-    { name:"Überholen Definition", question:"Was verstehen Sie unter Überholen?", options:["Vorbeibewegen an einem anderen Fahrzeug in gleicher Richtung","Anhalten","Abbiegen","Spurwechsel"], correct:0 },
-    { name:"Vertrauensgrundsatz", question:"Was ist der Vertrauensgrundsatz?", options:["Dass jeder auf Einhaltung der Rechtsvorschriften vertrauen darf","Dass man nie vertrauen soll","Nur für Autofahrer","Nur bei Tag"], correct:0 },
-    { name:"Unfallverletzte", question:"Welche Personen müssen sich um Unfallverletzte kümmern?", options:["Alle am Unfall Beteiligten und Zeugen","Nur der Verursacher","Nur die Polizei","Niemand"], correct:0 },
-    { name:"Beschädigung beim Ausparken", question:"Wie verhalten Sie sich, wenn Sie beim Ausparken ein anderes KFZ beschädigen?", options:["Polizei unverzüglich verständigen","Wegfahren","Zettel hinterlassen","Nichts tun"], correct:0 },
-    { name:"Alkoholgrenze Taxilenker", question:"Wann gilt der Lenker eines PKW als Alkohol beeinträchtigt?", options:["0,1 Promille","0,5 Promille","0,0 Promille","0,3 Promille"], correct:0 },
-    { name:"Alkoholtest", question:"Wann darf ein Polizist einen Alkoholtest vornehmen?", options:["Jederzeit","Nur bei Verdacht","Nur nach Unfall","Nur bei Tag"], correct:0 },
-    { name:"Eisenbahnkreuzung", question:"Dürfen Sie einen Mopedfahrer auf einer Eisenbahnkreuzung überholen?", options:["Nein","Ja","Nur wenn kein Zug kommt","Nur bei Tag"], correct:0 },
-    { name:"Schienenstraße links", question:"Dürfen Sie auf einer Schienenstraße links zufahren?", options:["Nein, außer in Einbahnstraßen","Ja, immer","Nur bei Stau","Nur mit Erlaubnis"], correct:0 },
-    { name:"Vorrangstraße links", question:"Dürfen Sie auf einer Vorrangstraße im Ortsgebiet links zufahren?", options:["Nein, außer in Einbahnstraßen","Ja, immer","Nur zum Abbiegen","Nur nachts"], correct:0 },
-    { name:"Freie Fahrstreifenwahl", question:"Was verstehen Sie unter der freien Wahl des Fahrstreifens?", options:["Im Ortsgebiet bei mindestens zwei Fahrstreifen frei wählen dürfen","Immer rechts fahren","Immer links fahren","Nie wechseln"], correct:0 },
-    { name:"Einbahnstraße Radfahrer", question:"Unter welchen Voraussetzungen muss man in der Einbahnstraße mit entgegenkommenden Radfahrern rechnen?", options:["Wenn Zusatztafel ausgenommen Radfahrer vorhanden","Immer","Nie","Nur bei Tag"], correct:0 },
-    { name:"Gehsteig benutzen", question:"Wann dürfen Sie mit einem KFZ den Gehsteig benutzen?", options:["Zum Überqueren für Garage oder Hauseinfahrt","Immer","Nie","Nur kurz"], correct:0 },
-    { name:"Sperrlinie überfahren", question:"Unter welchen Voraussetzungen dürfen Sie eine Sperrlinie überfahren?", options:["Wenn Leitlinie näher zum eigenen Fahrzeug liegt","Nie","Immer","Nur bei Stau"], correct:0 },
-    { name:"Haltelinie", question:"Was ist eine Haltelinie?", options:["Durchgehende, quer verlaufende Linie vor der anzuhalten ist","Gestrichelte Linie","Pfeile","Fahrbahnmarkierung"], correct:0 },
-    { name:"Busspur Vorfahrt", question:"Taxi auf Busspur, PKW biegt rechts ab und überquert Busspur. Wer hat Vorfahrt?", options:["Taxi auf Busspur","PKW","Wer zuerst kommt","Keiner"], correct:0 },
-    { name:"Reißverschlusssystem", question:"Was verstehen Sie unter Reißverschlusssystem?", options:["Wechselseitiges Einordnen an Engstellen","Immer rechts fahren","Immer Vorfahrt gewähren","Schnell fahren"], correct:0 },
-    { name:"Geradeaus Gebot", question:"Dürfen Sie beim Gebotszeichen Vorgeschriebene Fahrtrichtung geradeaus umkehren?", options:["Nein","Ja","Nur bei Nacht","Nur mit Erlaubnis"], correct:0 },
-    { name:"Rechtsabbiegen verboten", question:"Dürfen Sie beim Verkehrszeichen Einbiegen nach rechts verboten umkehren?", options:["Ja","Nein","Nur bei Tag","Nur mit Erlaubnis"], correct:0 },
-    { name:"Schienenstraße umkehren", question:"Dürfen Sie auf einer Schienenstraße umkehren?", options:["Grundsätzlich ja, außer auf Vorrangstraßen","Nie","Immer","Nur an Kreuzungen"], correct:0 },
-    { name:"Rechts überholen", question:"Wann dürfen Sie erlaubterweise rechts überholen?", options:["Wenn Fahrzeuge nach links einbiegen wollen","Nie","Immer","Nur auf Autobahnen"], correct:0 },
-    { name:"Straßenbahn überholen", question:"Auf welcher Seite überholen Sie eine Straßenbahn?", options:["Rechts, links nur in Einbahnstraßen","Immer links","Immer rechts","Gar nicht"], correct:0 },
-    { name:"Überholen verboten", question:"Welche Fahrzeuge dürfen Sie beim Verkehrszeichen Überholen verboten nicht überholen?", options:["Mehrspurige Kraftfahrzeuge","Fahrräder","Mopeds","Fußgänger"], correct:0 },
-    { name:"Schutzweg überholen", question:"Dürfen Sie auf einem ungeregelten Schutzweg einen Flaker überholen?", options:["Nein","Ja","Nur bei Tag","Nur wenn frei"], correct:0 },
-    { name:"Radfahrer Schutzweg", question:"Dürfen Sie einen Radfahrer auf einem ungeregelten Schutzweg überholen?", options:["Nein","Ja","Nur wenn er langsam fährt","Nur bei Grün"], correct:0 },
-    { name:"Straßenbahn Haltestelle", question:"Unter welchen Voraussetzungen dürfen Sie an einer im Haltestellenbereich stehenden Straßenbahn vorbeifahren?", options:["Schritttempo, 1,5m Abstand, niemand gefährden","Immer","Nie","Nur wenn Türen geschlossen"], correct:0 },
-    { name:"Halt-Zeichen", question:"Wo ist beim Vorhandensein des Verkehrszeichens Halt anzuhalten?", options:["An der Haltelinie oder Sichtpunkt zum Querverkehr","Wo man will","5m davor","10m davor"], correct:0 },
-    { name:"Gegenverkehrsregel", question:"Was verstehen Sie unter der Gegenverkehrsregel?", options:["Geradeausfahrende oder rechtseinbiegende haben Vorrang","Linksabbieger haben immer Vorrang","Wer zuerst kommt","Rechts vor links"], correct:0 },
-    { name:"Straßenbahn Vorrang", question:"Wo gilt das Stehenbleiben der Straßenbahn nicht als Vorrangverzicht?", options:["In der Haltestelle","An Kreuzungen","Bei Grün","Immer"], correct:0 },
-    { name:"Abruptes Anhalten", question:"Ist es erlaubt, wegen einer am Fahrbahnrand winkenden Person das Taxifahrzeug abrupt zum Stillstand zu bringen?", options:["Nein","Ja","Nur bei Tag","Nur in 30er Zone"], correct:0 },
-    { name:"Hupen in Wien", question:"Unter welchen Voraussetzungen dürfen Sie in Wien erlaubterweise hupen?", options:["Um Personen zu warnen","Immer","Nie","Nur nachts"], correct:0 },
-    { name:"Fernlicht ausgefallen", question:"Dürfen Sie bei Dunkelheit weiterfahren, wenn das Fernlicht und das Abblendlicht ausgefallen sind?", options:["Ja, wenn Straßenbeleuchtung ausreichend","Nein","Nur langsam","Nur bis 100m"], correct:0 },
-    { name:"2. Spur halten", question:"Wann dürfen Sie mit einem Taxi in der 2. Spur halten?", options:["Kurz zum Ein-/Aussteigen lassen wenn innerhalb 50m kein Platz","Immer","Nie","Nur nachts"], correct:0 },
-    { name:"Haltestellenbereich", question:"Wie weit reicht der Haltestellenbereich?", options:["15m vor und nach der Haltestellentafel","10m","20m","5m"], correct:0 },
-    { name:"Haltestelle halten", question:"Dürfen Sie im Haltestellenbereich halten?", options:["Nur kurz zum Ein-/Aussteigen","Immer","Nie","Nur außerhalb Betriebszeiten"], correct:0 },
-    { name:"Schutzweg parken", question:"Dürfen Sie auf einem Schutzweg parken?", options:["Nein","Ja","Nur kurz","Nur nachts"], correct:0 },
-    { name:"Kreuzung halten", question:"Dürfen Sie im Bereich von 5m vom Schnittpunkt einander kreuzender Fahrbahnränder halten?", options:["Ja, zum Fahrgast aufnehmen wenn kein Schutzweg","Nein","Immer","Nur bei Tag"], correct:0 },
-    { name:"Omnibushaltestelle halten", question:"Dürfen Sie in einer Omnibushaltestelle halten, um einen Fahrgast aufzunehmen?", options:["Ja","Nein","Nur kurz","Nur wenn kein Bus kommt"], correct:0 },
-    { name:"Taxistandplatz PKW", question:"Darf ein PKW (kein Taxi) auf einem Taxistandplatz halten, um Personen aus- oder einsteigen zu lassen?", options:["Ja","Nein","Nur nachts","Nur mit Genehmigung"], correct:0 },
-    { name:"Hauseinfahrt halten", question:"Unter welchen Voraussetzungen darf ein Taxi vor einer Haus- oder Grundstückseinfahrt halten?", options:["Wenn Einfahrten unverzüglich wieder freigemacht werden","Nie","Immer","Nur mit Erlaubnis"], correct:0 },
-    { name:"Ladezone halten", question:"Dürfen Sie mit einem Taxi in einer Ladezone halten, um Fahrgäste aufzunehmen?", options:["Ja","Nein","Nur kurz","Nur nachts"], correct:0 },
-    { name:"Radweg halten", question:"Dürfen Sie auf einem Radweg halten?", options:["Nein","Ja","Nur kurz","Nur zum Einsteigen"], correct:0 },
-    { name:"Halteverbotszonen", question:"In welchen Halteverbotszonen dürfen Sie erlaubterweise Fahrgäste aussteigen lassen?", options:["Im Haltestellenbereich, Ladezone, 2. Spur, Taxistandplatz","Üall","Keine","Nur in Seitenstraßen"], correct:0 },
-    { name:"Fußgängerzone", question:"Dürfen Taxis in Fußgängerzonen einfahren?", options:["Ja, wenn Zusatztafel oder zum Abholen/Bringen","Nein","Immer","Nur mit Sondergenehmigung"], correct:0 },
-    { name:"Kurzparkzone", question:"Sind Taxilenker verpflichtet in Kurzparkzonen einen Parkschein auszufüllen?", options:["Ja, außer kurz zum Ein-/Aussteigen","Nein","Immer","Nur bei längerem Aufenthalt"], correct:0 },
-    { name:"Geregelte Kreuzung", question:"Wann ist eine Kreuzung geregelt?", options:["Durch Lichtzeichen oder Polizei","Immer","Nie","Wenn Verkehrsschilder"], correct:0 },
-    { name:"Linienbus Annäherung", question:"Mit welcher Geschwindigkeit nähern Sie sich einem in der Haltestelle stehenden Linienbus?", options:["Schrittgeschwindigkeit","50 km/h","30 km/h","Normal"], correct:0 },
-    { name:"Gelblicht anhalten", question:"Wo ist beim Aufleuchten des gelben Lichtes einer Ampel anzuhalten?", options:["Vor der Haltelinie, Schutzweg oder Kreuzung","Wo man will","5m davor","10m davor"], correct:0 },
-    { name:"Gelblicht befahren", question:"Wann dürfen Sie eine Kreuzung bei Gelblicht befahren?", options:["Wenn sicheres Anhalten nicht mehr möglich","Nie","Immer","Nur bei Grün"], correct:0 },
-    { name:"Gelb blinkend", question:"Was bedeutet gelbes blinkendes Licht?", options:["Vorsicht","Halt","Freie Fahrt","Ende"], correct:0 },
-    { name:"Rote Fläche", question:"Was bedeutet die rote Fläche einer Signalscheibe?", options:["Halt","Vorsicht","Freie Fahrt","Langsam"], correct:0 },
-    { name:"Begegnungszone", question:"Dürfen Taxis in Begegnungszonen einfahren?", options:["Ja","Nein","Nur mit Erlaubnis","Nur zum Abholen"], correct:0 },
-    { name:"Rettungsgasse benutzen", question:"Dürfen Sie mit dem Taxi die Rettungsgasse benutzen?", options:["Nein","Ja","Nur im Stau","Nur wenn frei"], correct:0 },
-    { name:"Bus-Lichtsignale", question:"Dürfen Sie mit Ihrem Taxi die Lichtsignale für Autobusse mitbenutzen?", options:["Ja","Nein","Nur nachts","Nur mit Erlaubnis"], correct:0 },
-    { name:"Radfahrerüberfahrt", question:"Was ist eine Radfahrerüberfahrt?", options:["Für Radfahrer bestimmter gekennzeichneter Fahrbahnteil","Fußgängerüberweg","Straße","Gehsteig"], correct:0 },
-    { name:"Schutzweg", question:"Was ist ein Schutzweg?", options:["Für Fußgänger bestimmter Teil der Fahrbahn (Zebrastreifen)","Radweg","Straße","Gehsteig"], correct:0 },
-    { name:"Rettungsgasse", question:"Was ist eine Rettungsgasse?", options:["Durchgängige Fahrmöglichkeit für Notfallfahrzeuge","Taxispur","Busspur","Parkplatz"], correct:0 },
-    { name:"Rettungsgasse Bildung", question:"Wo muss eine Rettungsgasse gebildet werden?", options:["Auf Autobahnen und Schnellstraßen","Im Ortsgebiet","Üall","Nirgends"], correct:0 },
-    { name:"Rettungsgasse Benützung", question:"Wer darf eine Rettungsgasse benützen?", options:["Einsatzfahrzeuge und Abschleppdienste","Jeder","Niemand","Nur Taxis"], correct:0 },
-    { name:"Verhalten Schutzweg", question:"Wie verhalten Sie sich vor einem Schutzweg?", options:["Geschwindigkeit so wählen, dass angehalten werden kann","Schnell fahren","Hupen","Ignorieren"], correct:0 },
-    { name:"Vorrangstraße umkehren", question:"Dürfen Sie auf einer Vorrangstraße im Ortsgebiet umkehren?", options:["Nein","Ja","Nur an Kreuzungen","Nur bei Tag"], correct:0 },
-    { name:"Überholseite", question:"Auf welcher Seite überholen Sie andere Fahrzeuge?", options:["Links, außer bestimmte Ausnahmen","Immer rechts","Immer links","Wechselnd"], correct:0 },
-    { name:"Rechts überholen erlaubt", question:"Welche Fahrzeuge dürfen Sie rechts überholen?", options:["Schienenfahrzeuge, linkseinbiegende, Straßendienstfahrzeuge","Alle","Keine","Nur langsame"], correct:0 },
-    { name:"Schutzweg überholen", question:"Dürfen Sie auf und unmittelbar vor Schutzwegen überholen?", options:["Nein","Ja","Nur bei Grün","Nur wenn frei"], correct:0 },
-    { name:"Halten und Parken verboten", question:"Wo ist Halten und Parken verboten?", options:["An Orten mit entsprechendem Verbotzeichen, Schutzwegen, etc.","Üall","Nirgends","Nur in Wohnstraßen"], correct:0 },
-    { name:"Polizist Arm hoch", question:"Was bedeutet der senkrecht nach oben gehaltene Arm eines Polizisten?", options:["Halt","Weiterfahren","Langsam","Schnell"], correct:0 },
-    { name:"Polizist Arm bewegt", question:"Ein Polizist bewegt den Arm auf und ab, was bedeutet das?", options:["Langsamer fahren","Schneller fahren","Anhalten","Umkehren"], correct:0 },
-    { name:"Rot und gelb", question:"Was bedeutet rotes und gelbes Licht gemeinsam?", options:["Halt, in ca. 2 Sekunden grün","Sofort grün","Halt","Vorsicht"], correct:0 },
-    { name:"Grün blinkend", question:"Was bedeutet grün blinkendes Licht?", options:["Als nächstes folgt gelb (Halt)","Freie Fahrt","Ende","Vorsicht"], correct:0 },
-    { name:"Schutzweg Annäherung", question:"Wie nähern Sie sich einem Schutzweg?", options:["Geschwindigkeit anpassen, dass Anhalten möglich","Schnell","Hupend","Ignorieren"], correct:0 },
-    { name:"Radfahrerüberfahrt Annäherung", question:"Wie nähern Sie sich einer Radfahrerüberfahrt?", options:["Geschwindigkeit anpassen, dass Anhalten möglich","Schnell","Hupend","Ignorieren"], correct:0 },
-    { name:"Vorrang besondere Fahrzeuge", question:"Welche Fahrzeuge haben Vorrang, auch wenn sie von links kommen?", options:["Schienenfahrzeuge und Einsatzfahrzeuge","Alle","Keine","Nur Taxis"], correct:0 },
-    { name:"Vertrauensgrundsatz Ausnahmen", question:"Welche Personen sind vom Vertrauensgrundsatz ausgenommen?", options:["Kinder, Menschen mit Behinderung","Alle","Keine","Nur Alte"], correct:0 },
-    { name:"Fußgängerzone durchfahren", question:"Dürfen Sie durch eine Fußgängerzone durchfahren?", options:["Nein","Ja","Nur nachts","Nur mit Erlaubnis"], correct:0 },
-    { name:"Fußgängerzone verlassen", question:"Sie haben einen Fahrgast in einer Fußgängerzone abgeholt. Wie verlassen Sie die Fußgängerzone?", options:["Im Schritttempo bei erster Möglichkeit","Schnell","Gar nicht","Rückwärts"], correct:0 }
+    { name:"Wohnstraße", question:"Dürfen Taxis durch Wohnstraßen durchfahren?", options:["Nur Schrittgeschwindigkeit (4–5 km/h)","Ja, ohne Einschränkung","Nein, verboten","Nur tagsüber","Nur mit Sondergenehmigung","Nur zum Ein- und Aussteigen"], correct:0 },
+    { name:"Rettungsgasse", question:"Wo muss eine Rettungsgasse gebildet werden?", options:["Auf Autobahnen & Schnellstraßen","Nur im Ortsgebiet","Nirgendwo","Auf Landstraßen","In Tunnel","Auf Brücken"], correct:0 },
+    { name:"Geschwindigkeit Ortsgebiet", question:"Wie hoch ist die Höchstgeschwindigkeit im Ortsgebiet?", options:["50 km/h","30 km/h","60 km/h","70 km/h","40 km/h","80 km/h"], correct:0 },
+    { name:"Handy am Steuer", question:"Darf man als Taxilenker das Handy benutzen?", options:["Nur mit Freisprecheinrichtung","Ja, ohne Einschränkung","Nein, niemals","Nur im Stand","Nur mit Headset","Nur für Navigationsgerät"], correct:0 },
+    { name:"Alkoholgrenze", question:"Wie hoch ist die Promillegrenze für Taxilenker?", options:["0,1 ‰","0,5 ‰","0,0 ‰","0,2 ‰","0,3 ‰","0,4 ‰"], correct:0 },
+    { name:"Kindersitz", question:"Ab wann braucht ein Kind einen Kindersitz im Taxi?", options:["Bis 14 Jahre oder 150 cm","Bis 12 Jahre","Bis 10 Jahre","Bis 8 Jahre","Bis 6 Jahre","Immer"], correct:0 }
   ],
-
   kfg: [
-    { name:"Winterreifenpflicht", question:"Für Taxis gilt Winterreifenpflicht …", options:["1. Nov – 15. Apr bei winterlichen Verhältnissen","1. Okt – 1. März","Ganzjährig","Nur bei Schnee"], correct:0 },
-    { name:"Mindestprofiltiefe Sommer", question:"Mindestprofiltiefe der Sommerreifen bei PKW?", options:["1,6 mm","2,0 mm","3,0 mm","1,0 mm"], correct:0 },
-    { name:"Mindestprofiltiefe Winter", question:"Mindestprofiltiefe der Winterreifen bei PKW?", options:["4 mm für Radialreifen","2 mm","3 mm","5 mm für Diagonalreifen"], correct:0 },
-    { name:"Kinderbeförderung", question:"Wie viele Kinder zwischen 6 und 14 Jahren dürfen auf einer 3er Sitzbank in der 2. Reihe befördert werden?", options:["3 Kinder","2 Kinder","4 Kinder","1 Kind"], correct:0 },
-    { name:"Fernlicht Ortsgebiet", question:"Wann dürfen Sie im Ortsgebiet bei Dunkelheit das Fernlicht verwenden?", options:["Bei Warnzeichen oder wenn Höchstgeschwindigkeit über 50 km/h","Immer bei Dunkelheit","Nie im Ortsgebiet","Nur auf Autobahnen"], correct:0 },
-    { name:"Licht bei Regen", question:"Im Ortsgebiet herrscht am Tag Sichtbehinderung durch starken Regen. Welches Licht verwenden Sie?", options:["Abblendlicht oder Nebelscheinwerfer","Fernlicht","Standlicht","Parklicht"], correct:0 },
-    { name:"Nebelschlussleuchte", question:"Wann dürfen Sie die Nebelschlussleuchte einschalten?", options:["Bei Sichtweite unter 50 Meter","Immer bei Nebel","Bei Regen","Nachts"], correct:0 },
-    { name:"Lichthupe", question:"Wann dürfen Sie die Lichthupe verwenden?", options:["Um andere Straßenbenützer zu warnen","Immer","Nie","Nur bei Gefahr"], correct:0 },
-    { name:"Gurtpflicht Taxilenker", question:"Wann ist ein Taxilenker von der Gurtanlegepflicht befreit?", options:["Während er Fahrgäste befördert","Immer","Nie","Nur im Ortsgebiet"], correct:0 },
-    { name:"Kindersitz Taxi", question:"Müssen Kinder unter 14 Jahren und unter 150 cm Größe im Taxi in einem Kindersitz befördert werden?", options:["Nein, außer auf Beifahrersitz","Ja, immer","Nur bis 12 Jahre","Nur auf Langstrecken"], correct:0 },
-    { name:"Gurtausnahme", question:"Nennen Sie eine Ausnahme von der Gurtempflicht?", options:["Taxifahrer mit Fahrgästen","Immer anlegen","Nie","Nur auf Autobahn"], correct:0 },
-    { name:"Besorgungsfahrt Gurt", question:"Sie führen mit Ihrem Taxi eine Besorgungsfahrt durch. Sind Sie von der Gurtanlegepflicht befreit?", options:["Nein","Ja","Nur im Ortsgebiet","Nur auf kurzen Strecken"], correct:0 },
-    { name:"Kennzeichentafel beschädigt", question:"Was müssen Sie tun, wenn eine Kennzeichentafel beschädigt ist?", options:["Antrag auf neue Kennzeichen stellen","Weiterfahren","Reparieren","Nichts"], correct:0 },
-    { name:"Kennzeichentafel Verlust", question:"Wie verhalten Sie sich bei Verlust der Kennzeichentafel?", options:["Verlustanzeige bei Polizei, 1 Woche mit Ersatztafel","Neue bestellen","Weiterfahren","Nichts tun"], correct:0 },
-    { name:"Lenkberechtigung B", question:"Wie ist die Lenkberechtigung Klasse B eingeschränkt?", options:["Max. 8 Personen, 3.500 kg, Anhänger bis 750 kg","Unbegrenzt","Nur PKW","Nur bis 5 Personen"], correct:0 },
-    { name:"Duplikatführerschein", question:"Wann sind Sie verpflichtet, sich einen Duplikatführerschein zu lösen?", options:["Bei Verlust, Diebstahl oder Beschädigung","Nie","Nur bei Verlust","Nur bei Diebstahl"], correct:0 },
-    { name:"Anhalteweg", question:"Wie setzt sich der Anhalteweg zusammen?", options:["Reaktionsweg plus Bremsweg","Nur Bremsweg","Nur Reaktionsweg","Geschwindigkeit"], correct:0 },
-    { name:"Meter pro Sekunde", question:"Wie viel Meter in der Sekunde legt ein KFZ bei 60 km/h zurück?", options:["18 Meter","10 Meter","15 Meter","20 Meter"], correct:0 },
-    { name:"Fahren auf halbe Sicht", question:"Was verstehen Sie unter Fahren auf halbe Sicht?", options:["Anhalteweg nicht größer als halbe Sichtweite","Immer langsam","Nie schnell","Immer vorsichtig"], correct:0 },
-    { name:"Bremsweg Formel", question:"Wie lautet die Formel für den Bremsweg?", options:["(Geschwindigkeit/10) x (Geschwindigkeit/10)","Geschwindigkeit x 3","Geschwindigkeit/2","Geschwindigkeit x Geschwindigkeit"], correct:0 },
-    { name:"Reaktionsweg Formel", question:"Wie lautet die Formel für den Reaktionsweg?", options:["(Geschwindigkeit/10) x 3","Geschwindigkeit x Geschwindigkeit","Geschwindigkeit/2","Geschwindigkeit x 2"], correct:0 },
-    { name:"Sicherheitsabstand", question:"Wann müssen Sie hinter einem Fahrzeug den Anhalteweg als Sicherheitsabstand einhalten?", options:["Bei Glatteis, starkem Nebel","Immer","Nie","Nur auf Autobahn"], correct:0 },
-    { name:"Fahrtantritt Überprüfung", question:"Welche Ausrüstung müssen Sie vor Fahrtantritt überprüfen?", options:["Beleuchtung, Bereifung, Bremsen, Lenkung","Nichts","Nur Motor","Nur Bremsen"], correct:0 },
-    { name:"Mitgeführte Dokumente", question:"Welche Dokumente müssen Sie beim Lenken eines PKW mitführen?", options:["Führerschein, Zulassungsbescheinigung","Nur Führerschein","Keine","Nur Personalausweis"], correct:0 },
-    { name:"Hupe überprüfen", question:"Dürfen Sie vor Fahrtantritt in Wien die Hupe überprüfen?", options:["Nein","Ja","Nur kurz","Nur bei Tag"], correct:0 },
-    { name:"Führerschein Verlust", question:"Wie verhalten Sie sich bei Verlust des Führerscheines?", options:["Verlustanzeige bei Polizei, 4 Wochen gültig","Neuen beantragen","Weiterfahren","Nichts tun"], correct:0 },
-    { name:"Zulassung Verlust", question:"Wie verhalten Sie sich bei Verlust der Zulassungsbescheinigung?", options:["Verlustanzeige bei Polizei, 1 Woche gültig","Neue beantragen","Weiterfahren","Nichts tun"], correct:0 },
-    { name:"Verbandszug", question:"Beim Lenken welcher Fahrzeuge müssen Sie ein Verbandszug mitführen?", options:["Alle Kraftfahrzeuge","Keine","Nur LKW","Nur Taxis"], correct:0 },
-    { name:"KFZ Weitergeben", question:"Unter welchen Voraussetzungen dürfen Sie als Lenker ein KFZ weitergeben?", options:["Mit Zustimmung des Zulassungsbesitzers","Immer","Nie","Nur an Familie"], correct:0 },
-    { name:"Abschleppen mit Seil", question:"Das Abschleppen von Fahrzeugen mit einem Seil ist unter welchen Bedingungen zulässig?", options:["Lenkung und mindestens eine Bremskreis muss funktionieren","Immer","Nie","Nur auf kurze Distanz"], correct:0 },
-    { name:"Alarmblinkanlage", question:"Wann schalten Sie die Alarmblinkanlage ein?", options:["Bei Stau-Ende, Pannen, Unfällen","Immer","Nie","Nur bei Nacht"], correct:0 },
-    { name:"Polizei Kennzeichen abnahme", question:"Wann nimmt die Polizei Zulassungsbescheinigung und Kennzeichentafel ab?", options:["Bei nicht bezahlter Versicherung oder technischen Mängeln","Immer","Nie","Nur bei Diebstahl"], correct:0 },
-    { name:"Tunnel Beleuchtung", question:"Welches Licht verwenden Sie beim Befahren eines beleuchteten Tunnels?", options:["Abblendlicht","Fernlicht","Standlicht","Keines"], correct:0 },
-    { name:"Telefonieren während Fahrt", question:"Dürfen Sie während der Fahrt telefonieren?", options:["Nur mit Freisprecheinrichtung","Ja, immer","Nein","Nur kurz"], correct:0 },
-    { name:"Motor warmlaufen", question:"Dürfen Sie den Motor warmlaufen lassen?", options:["Nein","Ja","Nur bei Kälte","Nur kurz"], correct:0 },
-    { name:"Pannendreieck", question:"In welchen Fahrzeugen muss man Pannendreieck und Warnweste mitführen?", options:["Mehrspurigen Kraftfahrzeugen","Keinen","Nur LKW","Nur Taxis"], correct:0 },
-    { name:"Warnkleidung", question:"Wann und wo muss man Warnkleidung tragen?", options:["Bei Panne/Unfall auf Autobahnen, Autostraßen, Freilandstraßen","Immer","Nie","Nur bei Nacht"], correct:0 },
-    { name:"Polizeikontrolle", question:"Muss man bei einer polizeilichen Kontrolle sein Fahrzeug zugänglich machen?", options:["Ja","Nein","Nur wenn man will","Nur bei Verdacht"], correct:0 },
-    { name:"Verantwortung Fahrzeugzustand", question:"Wer ist verantwortlich, dass das Fahrzeug den gesetzlichen Vorschriften entspricht?", options:["Fahrzeughalter und Lenker","Nur Halter","Nur Lenker","Niemand"], correct:0 },
-    { name:"Lenkerauskunft", question:"Muss der Zulassungsbesitzer gegenüber der Behörde Auskunft über den Fahrzeuglenker erteilen?", options:["Ja","Nein","Nur bei Unfall","Nur wenn er will"], correct:0 },
-    { name:"Abschleppen starre Verbindung", question:"Das Abschleppen eines Fahrzeuges mit einer starren Verbindung ist unter welchen Bedingungen zulässig?", options:["Lenkung muss funktionieren, Lenker muss Berechtigung haben","Immer","Nie","Nur auf kurze Distanz"], correct:0 },
-    { name:"Reifenarten mischen", question:"Dürfen Reifenarten gemischt werden?", options:["Nein","Ja","Nur vorne/hinten","Nur bei Not"], correct:0 },
-    { name:"Nicht verkehrszuverlässig", question:"Wann gilt man als nicht verkehrszuverlässig?", options:["Bei geistiger/körperlicher Ungeeignetheit oder Straftaten","Immer","Nie","Nur bei Unfällen"], correct:0 },
-    { name:"Gefährliches Verhalten", question:"Was gilt als besonders gefährliches Verhalten im Straßenverkehr?", options:["Erhebliche Geschwindigkeitsüberschreitungen, Nichteinhalten des Sicherheitsabstands","Jedes Fehlverhalten","Nur Alkohol","Nur Rotlichtverstoß"], correct:0 },
-    { name:"Voraussetzungen Lenken", question:"Was sind die Voraussetzungen für das Lenken eines Kraftfahrzeugs?", options:["Führerschein der jeweiligen Klasse","Nur Alter","Nur Ausbildung","Keine"], correct:0 }
+    { name:"Winterreifenpflicht", question:"Für Taxis gilt Winterreifenpflicht …", options:["1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)","1. Okt – 1. März","Ganzjährig","Nur bei Schnee","1. Dez – 28. Feb","Nur auf Autobahnen"], correct:0 },
+    { name:"Hauptuntersuchung", question:"Wie oft muss ein Taxi zur Hauptuntersuchung?", options:["Einmal jährlich","Alle 2 Jahre","Alle 6 Monate","Alle 3 Jahre","Bei Bedarf","Nur bei Defekten"], correct:0 },
+    { name:"Lenkzeit", question:"Wie lange darf ein Taxilenker maximal am Stück lenken?", options:["4,5 Stunden","6 Stunden","8 Stunden","10 Stunden","12 Stunden","Keine Begrenzung"], correct:0 },
+    { name:"Ruhezeit", question:"Wie lange muss die tägliche Ruhezeit mindestens sein?", options:["11 Stunden","8 Stunden","10 Stunden","9 Stunden","12 Stunden","6 Stunden"], correct:0 }
   ],
-
   arbeit: [
-    { name:"Arbeitsverhältnis Entstehung", question:"Wie entsteht ein Arbeitsverhältnis und was muss den Arbeitnehmern ausgehändigt werden?", options:["Durch Arbeitsvertrag, Dienstzettel aushändigen","Durch mündliche Vereinbarung","Automatisch","Durch Handschlag"], correct:0 },
-    { name:"Arbeitnehmer Pflichten", question:"Welche Pflichten haben Arbeitnehmer in einem Arbeitsverhältnis?", options:["Arbeitspflicht, Sorgfaltspflicht, Haftpflicht, Treuepflicht, Weisungspflicht","Nur Arbeitspflicht","Keine","Nur pünktlich sein"], correct:0 },
-    { name:"Arbeitgeber Pflichten", question:"Welche Pflichten haben Arbeitgeber in einem Arbeitsverhältnis?", options:["Anmeldepflicht, Fürsorgepflicht, Entgeltzahlungspflicht, Urlaubsgewährung","Nur Lohn zahlen","Nur Versicherung","Nur für Sicherheit sorgen"], correct:0 },
-    { name:"Sozialversicherung", question:"Was ist die Sozialversicherung?", options:["Pflichtversicherung für Kranken-, Unfall-, Pensions-, Arbeitslosenversicherung","Freiwillige Versicherung","Nur Krankenversicherung","Private Versicherung"], correct:0 },
-    { name:"Mindestlohn Nachteile", question:"Welche Nachteile haben Arbeitnehmer, wenn sie zum Mindestlohn angemeldet sind, aber mehr verdienen?", options:["Niedrigeres Krankengeld, Arbeitslosengeld, Pension, Urlaubsgeld","Keine Nachteile","Höhere Steuern","Weniger Urlaub"], correct:0 },
-    { name:"Schwarzarbeit Nachteile", question:"Welche Nachteile haben Arbeitnehmer, wenn sie nicht angemeldet ('schwarz' arbeiten)?", options:["Keine Versicherung gegen Krankheit, Unfall, Pension, Arbeitslosigkeit","Keine Nachteile","Höheres Einkommen","Weniger Steuern"], correct:0 },
-    { name:"Arbeitsverhältnis beenden Arbeitnehmer", question:"Wie können Arbeitnehmer ein Arbeitsverhältnis beenden?", options:["Kündigung, vorzeitiger Austritt, einvernehmliche Auflösung, Zeitablauf","Nur Kündigung","Gar nicht","Nur mit Genehmigung"], correct:0 },
-    { name:"Arbeitsverhältnis beenden Arbeitgeber", question:"Wie können Arbeitgeber ein Arbeitsverhältnis beenden?", options:["Kündigung, Entlassung, einvernehmliche Auflösung, Zeitablauf","Nur Kündigung","Gar nicht","Nur mit Genehmigung"], correct:0 },
-    { name:"Kündigung", question:"Erklären Sie: Kündigung", options:["Einseitige Willenserklärung unter Einhaltung der Kündigungsfrist","Fristlose Entlassung","Einvernehmliche Auflösung","Automatische Beendigung"], correct:0 },
-    { name:"Entlassung", question:"Erklären Sie: Entlassung", options:["Fristlose Auflösung durch Arbeitgeber bei schwerwiegendem Grund","Kündigung mit Frist","Einvernehmliche Auflösung","Krankheit"], correct:0 },
-    { name:"Vorzeitiger Austritt", question:"Erklären Sie: vorzeitiger Austritt", options:["Sofortige Auflösung durch Arbeitnehmer aus wichtigem Grund","Kündigung mit Frist","Einvernehmliche Auflösung","Krankheit"], correct:0 },
-    { name:"Einvernehmliche Auflösung", question:"Erklären Sie: einvernehmliche Auflösung eines Dienstverhältnisses", options:["Gegenseitige Einigung von Arbeitnehmer und Arbeitgeber","Kündigung","Entlassung","Vorzeitiger Austritt"], correct:0 },
-    { name:"Zeitablauf", question:"Erklären Sie: Zeitablauf eines Dienstverhältnisses", options:["Automatisches Ende nach Ablauf befristeter Zeit","Kündigung","Entlassung","Vorzeitiger Austritt"], correct:0 },
-    { name:"Lohn nicht bezahlt", question:"Wohin wenden sich Arbeitnehmer, wenn der Lohn nicht oder nicht vollständig ausbezahlt wird?", options:["Arbeiterkammer oder Arbeits- und Sozialgericht","Polizei","Gewerkschaft","Anwalt"], correct:0 },
-    { name:"Kollektivvertrag Bereiche", question:"Welche wichtigen Bereiche werden im Kollektivvertrag geregelt?", options:["Mindestlöhne, Arbeitszeit, Überstunden, Urlaub, Abfertigung","Nur Lohn","Nur Arbeitszeit","Nur Urlaub"], correct:0 },
-    { name:"Kollektivvertrag Abschluss", question:"Wer schließt den Kollektivvertrag für das Taxigewerbe ab?", options:["Wirtschaftskammer Österreich und Gewerkschaftsbund","Nur Arbeitgeber","Nur Arbeitnehmer","Staat"], correct:0 },
-    { name:"Mindestlohn Taxi", question:"Wie hoch ist der kollektivvertragliche Mindestlohn im Taxigewerbe?", options:["1.705 € Brutto plus 10 € Taggeld (2023)","1.500 €","2.000 €","1.800 €"], correct:0 },
-    { name:"Kollektivvertrag Gültigkeit", question:"Für wen und wo gilt der Kollektivvertrag für das Taxigewerbe?", options:["Für Unternehmer und alle Arbeiter in ganz Österreich","Nur in Wien","Nur für Unternehmer","Nur für Angestellte"], correct:0 },
-    { name:"Probezeit", question:"Was sind die Besonderheiten der Probezeit?", options:["Jederzeitige Auflösung ohne Gründe und ohne Kündigungsfrist","Wie normale Kündigung","Längere Kündigungsfrist","Kürzerer Urlaub"], correct:0 },
-    { name:"Normal-Arbeitszeit", question:"Wie lange darf die Normal-Arbeitszeit pro Tag und pro Woche höchstens sein?", options:["12 Stunden pro Tag, 55 Stunden pro Woche","8 Stunden pro Tag, 40 Stunden pro Woche","10 Stunden pro Tag, 50 Stunden pro Woche","9 Stunden pro Tag, 45 Stunden pro Woche"], correct:0 },
-    { name:"Lenkzeit", question:"Wie lange darf die Lenkzeit pro Tag und pro Woche höchstens sein?", options:["9 Stunden pro Tag (2x 10 Stunden), 56 Stunden pro Woche","8 Stunden pro Tag, 40 Stunden pro Woche","10 Stunden pro Tag, 50 Stunden pro Woche","12 Stunden pro Tag, 60 Stunden pro Woche"], correct:0 },
-    { name:"Ruhezeit", question:"Wie lange muss die tägliche Ruhezeit sein?", options:["11 Stunden","8 Stunden","10 Stunden","9 Stunden"], correct:0 },
-    { name:"Urlaubs- und Weihnachtsgeld", question:"Wie viel Urlaubs- und Weihnachtsgeld stehen einem Taxilenker zu?", options:["Bis 1 Jahr: %, ab 2. Jahr: 1 Brutto-KV-Monatslohn","Immer 1 Monatslohn","½ Monatslohn","2 Monatslöhne"], correct:0 },
-    { name:"Schlechterstellung Kollektivvertrag", question:"Sind Vereinbarungen, die Arbeitnehmer schlechter stellen als im Kollektivvertrag, zulässig?", options:["Nein","Ja","Nur mit Zustimmung","Nur teilweise"], correct:0 },
-    { name:"Arbeitnehmerschutz Kontrolle", question:"Wer kontrolliert die Einhaltung der Arbeitnehmerschutzvorschriften?", options:["Arbeitsinspektorat","Polizei","Gewerkschaft","Arbeiterkammer"], correct:0 },
-    { name:"Haftpflicht Arbeitnehmer", question:"Eine Pflicht der Arbeitnehmer ist die Haftpflicht. Was bedeutet das?", options:["Haftung bei schuldhafter Nichterfüllung der Arbeitspflicht","Immer haften","Nie haften","Nur bei Vorsatz"], correct:0 },
-    { name:"Anmeldepflicht Arbeitgeber", question:"Eine Pflicht der Arbeitgeber ist die Anmeldepflicht. Was bedeutet das?", options:["Arbeitnehmer bei Sozialversicherung anmelden vor Arbeitsbeginn","Nichts","Nur bei Vollzeit","Nur auf Verlangen"], correct:0 },
-    { name:"Kündigungsfristen", question:"Wie lange sind die Kündigungsfristen laut Kollektivvertrag für das Taxigewerbe?", options:["Erste 2 Jahre: 6 Wochen, ab 2. Jahr: 2 Monate, etc.","Immer 1 Monat","Immer 3 Monate","Keine Frist"], correct:0 },
-    { name:"Vorzeitiger Austritt Gründe", question:"Nennen Sie vier Gründe für einen vorzeitigen Austritt.", options:["Krankheit, ausstehende Lohnzahlungen, Beleidigungen, Belästigung","Urlaub, Krankheit, private Gründe, besseres Angebot","Immer möglich","Nur bei Krankheit"], correct:0 },
-    { name:"Entlassung Gründe", question:"Nennen Sie vier Gründe für eine Entlassung.", options:["Grobe Pflichtverletzung, Vertrauensbruch, unentschuldigtes Fernbleiben, Alkoholmissbrauch","Krankheit, Urlaub, private Gründe, Unpünktlichkeit","Immer möglich","Nur bei Diebstahl"], correct:0 },
-    { name:"Kündigungsfrist vs Termin", question:"Erklären Sie Kündigungsfrist und Kündigungstermin.", options:["Frist: Zeit zwischen Kündigung und Ende, Termin: offizielles Ende","Gleiche Bedeutung","Unterschiedliche Namen","Kein Unterschied"], correct:0 },
-    { name:"Sozialversicherung Beiträge", question:"Wer bezahlt die Beiträge zur Sozialversicherung?", options:["Arbeitgeber und Arbeitnehmer","Nur Arbeitgeber","Nur Arbeitnehmer","Staat"], correct:0 },
-    { name:"Urlaub Krankheit", question:"Ein Arbeitnehmer wird während des Urlaubs krank. Wie lange muss der Krankenstand dauern, damit der Urlaub unterbrochen wird?", options:["Mindestens 3 Tage","1 Tag","1 Woche","2 Tage"], correct:0 },
-    { name:"Dienstzettel Inhalte", question:"Was ist ein Dienstzettel? Zählen Sie vier Inhalte auf.", options:["Schriftliche Bestätigung mit Name, Beginn, Art der Beschäftigung, Entgelt","Mündliche Vereinbarung","Arbeitsvertrag","Lohnzettel"], correct:0 },
-    { name:"Streitigkeiten", question:"Wo sind Streitigkeiten aus dem Arbeitsverhältnis auszutragen?", options:["Arbeits- und Sozialgericht","Polizei","Arbeiterkammer","Gewerkschaft"], correct:0 },
-    { name:"Urlaubsanspruch 1. Jahr", question:"Wie entsteht der Anspruch auf Urlaubstage im 1. Arbeitsjahr?", options:["Nach 6 Monaten Betriebszugehörigkeit","Sofort","Nach 1 Jahr","Nach 3 Monaten"], correct:0 },
-    { name:"Entgeltfortzahlung Beispiele", question:"Nennen Sie vier Beispiele für die Entgeltfortzahlung.", options:["Niederkunft Ehegattin, eigene Eheschließung, Tod naher Angehöriger, Krankheit","Urlaub, Krankheit, Feiertage, Wochenende","Immer","Nur bei Krankheit"], correct:0 },
-    { name:"Schichtwechsel Ankündigung", question:"Wann muss der Schichtwechsel den Dienstnehmern bekannt gegeben werden?", options:["24 Stunden vor Dienstbeginn","1 Woche vorher","Sofort","Bei Dienstantritt"], correct:0 },
-    { name:"Nachtarbeit Taxi", question:"Was gilt im Taxigewerbe als Nachtarbeit?", options:["Zeit zwischen 00:00 Uhr und 04:00 Uhr","22:00-06:00","20:00-04:00","00:00-06:00"], correct:0 },
-    { name:"Ansprüche geltend machen", question:"Wann und in welcher Form sind Ansprüche aus einem Dienstverhältnis im Taxigewerbe geltend zu machen?", options:["Innerhalb 3 Monaten nach Fälligkeit schriftlich und eingeschrieben","Mündlich","Jederzeit","Nur bei Kündigung"], correct:0 },
-    { name:"Urlaubsgeld entfällt", question:"Wann entfällt der Anspruch auf Urlaubs- und Weihnachtsgeld?", options:["Bei Entlassung oder vorzeitigem Austritt ohne berechtigten Grund","Immer","Nie","Bei Krankheit"], correct:0 },
-    { name:"Taggeld", question:"Wie hoch ist das Taggeld pro Kalendertag und wann steht es einem Taxilenker zu?", options:["10 €, wenn Fahrtätigkeit länger als 3 Stunden","5 €","15 €","20 €"], correct:0 },
-    { name:"Fahrzeugmängel", question:"Was tun, wenn während des Betriebes am Fahrzeug Mängel auftreten?", options:["Unverzüglich dem Dienstgeber melden","Ignorieren","Selbst reparieren","Weiterfahren"], correct:0 },
-    { name:"Führerschein Verlust", question:"Bei Verlust oder Abnahme des Führerscheins - was ist zu erledigen?", options:["Unverzüglich dem Arbeitgeber melden","Nichts","Neuen beantragen","Weiterfahren"], correct:0 },
-    { name:"Weiterfahren mit Mängeln", question:"Darf trotz Mängeln am Fahrzeug weitergefahren werden?", options:["Nur mit schriftlicher Ermächtigung des Dienstgebers","Immer","Nie","Nur bei kleinen Mängeln"], correct:0 },
-    { name:"Verkehrsunfall", question:"Sie haben einen Verkehrsunfall - was ist zu erledigen?", options:["Unfallmeldungen ausfüllen, unverzüglich dem Arbeitgeber melden","Nichts","Polizei rufen","Weiterfahren"], correct:0 },
-    { name:"Sonn- und Feiertagsdienst", question:"Müssen Taxilenker auch an Sonn- und Feiertagen einen Dienst verrichten?", options:["Ja","Nein","Nur wenn sie wollen","Nur mit Zuschlag"], correct:0 },
-    { name:"Lenkpause", question:"Wann müssen Taxilenker eine Lenkpause machen, und wie lange muss diese sein?", options:["Nach max. 4 Stunden Lenkzeit, mind. 30 Minuten","Nach 2 Stunden","Nach 6 Stunden","Nach 8 Stunden"], correct:0 },
-    { name:"Überstundenzuschlag", question:"Wie hoch ist der Zuschlag bei der Überstundenentlohnung?", options:["50%","25%","100%","75%"], correct:0 },
-    { name:"Arbeitssuche bei Kündigung", question:"Bei Kündigung durch den Arbeitgeber bekommt man Zeit für die Arbeitssuche, wieviel Zeit?", options:["Höchstens 1 Arbeitstag pro Woche","Keine Zeit","2 Tage pro Woche","3 Tage pro Woche"], correct:0 },
-    { name:"Arbeitssuche Lohnabzug", question:"Wird die Zeit für die Arbeitssuche nach einer Kündigung durch den Dienstgeber vom Lohn abgezogen?", options:["Nein","Ja","Teilweise","Nur bei langer Suche"], correct:0 },
-    { name:"Taxameter nicht eingeschaltet", question:"Ist das Nichteinschalten des Taxameters im Stadtgebiet ein Entlassungsgrund?", options:["Ja","Nein","Nur bei Beschwerde","Nur wenn auffällt"], correct:0 }
+    { name:"Mindestlohn", question:"Der KV-Mindestlohn im Taxigewerbe gilt …", options:["Österreichweit (Bundesgebiet)","Nur in Wien","Nur für Unternehmer","Nur für Angestellte","Nur in Großstädten","Nur für Vollzeitkräfte"], correct:0 },
+    { name:"Arbeitszeit", question:"Wie lange darf die tägliche Arbeitszeit maximal sein?", options:["12 Stunden","8 Stunden","10 Stunden","9 Stunden","11 Stunden","13 Stunden"], correct:0 },
+    { name:"Urlaubsanspruch", question:"Wie viele Tage Urlaub stehen einem Taxilenker pro Jahr zu?", options:["25 Tage","20 Tage","30 Tage","22 Tage","24 Tage","26 Tage"], correct:0 },
+    { name:"Kündigungsfrist", question:"Wie lange beträgt die Kündigungsfrist im Taxigewerbe?", options:["6 Wochen","4 Wochen","8 Wochen","2 Wochen","3 Monate","1 Monat"], correct:0 }
   ]
 };
 
-// Gürtel-Kreuzungen
+// Gürtel-узлы для учебного режима
 const GUERTEL_INTERSECTIONS = [
-  { title: "Mariahilfer Straße × Mariahilfer Gürtel", side: "innerer", coords: [48.1956, 16.3394] },
-  { title: "Burggasse × Neubaugürtel", side: "innerer", coords: [48.2058, 16.3389] },
-  { title: "Lerchenfelder Straße × Lerchenfelder Gürtel", side: "innerer", coords: [48.2094, 16.3367] },
-  { title: "Hernalser Hauptstraße × Hernalser Gürtel", side: "innerer", coords: [48.2185, 16.3326] }
+  { title:"Mariahilfer Straße × Mariahilfer Gürtel", side:"innerer", coords:[48.1956,16.3394] },
+  { title:"Nußdorfer Straße × Währinger Gürtel", side:"innerer", coords:[48.2332,16.3554] },
+  { title:"Burggasse × Neubaugürtel", side:"innerer", coords:[48.2058,16.3389] },
+  { title:"Thaliastraße × Lerchenfelder Gürtel", side:"innerer", coords:[48.2094,16.3367] },
+  { title:"Hernalser Hauptstraße × Hernalser Gürtel", side:"innerer", coords:[48.2185,16.3326] },
+  { title:"Ottakringer Straße × Ottakringer Gürtel", side:"äußerer", coords:[48.2148,16.3200] }
 ];
 
-// ============ HILFSFUNKTIONEN ============
+// ============ Helpers ============
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const toast = (m, ms = 1500) => { 
-  const t = $("#toast"); 
-  t.textContent = m; 
-  t.classList.add("show"); 
-  setTimeout(() => t.classList.remove("show"), ms); 
-};
+const toast = (m,ms=1500)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
+function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
 
-function shuffle(a) { 
-  const x = a.slice(); 
-  for (let i = x.length - 1; i > 0; i--) { 
-    const j = Math.floor(Math.random() * (i + 1)); 
-    [x[i], x[j]] = [x[j], x[i]]; 
-  } 
-  return x; 
+// ============ Map ============
+const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+
+// Создаем слои для маркеров
+const questionMarkers = L.layerGroup().addTo(map);
+const answerMarkers = L.layerGroup().addTo(map);
+
+// Функция для создания кастомных маркеров
+function createCustomMarker(color, className) {
+  return L.divIcon({
+    className: className,
+    html: `<div style="background-color: ${color}; border: 3px solid #fff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
 }
 
-// ============ KARTE ============
-const map = L.map('map').setView([48.2082, 16.3738], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-  attribution: '© OpenStreetMap' 
-}).addTo(map);
+// Создаем кастомные маркеры
+const questionMarker = createCustomMarker('#2563eb', 'marker-question');
+const correctMarker = createCustomMarker('#16a34a', 'marker-correct');
+const incorrectMarker = createCustomMarker('#dc2626', 'marker-incorrect');
 
-let answerMarker = null, gLayer = null;
+function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
 
-function fly([lat, lng], zoom = 16) { 
-  map.flyTo([lat, lng], zoom, { duration: 1.0 }); 
-}
-
-// ============ DATENVERWALTUNG ============
+// ============ Data Management ============
 let DATA = {};
 
 function loadQuestions() {
@@ -485,6 +525,7 @@ function loadQuestions() {
   if (saved) {
     DATA = JSON.parse(saved);
   } else {
+    // Загружаем стандартные вопросы
     DATA = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
     saveQuestions();
   }
@@ -498,14 +539,14 @@ function saveQuestions() {
 function updateCategoryCounts() {
   THEMEN.forEach(t => {
     const count = DATA[t.key]?.length || 0;
-    const countElement = $(`.cat input[value="${t.key}"]`)?.closest('.cat')?.querySelector('.count');
+    const countElement = $(`.cat input[value="${t.key}"]`).closest('.cat').querySelector('.count');
     if (countElement) {
       countElement.textContent = count;
     }
   });
 }
 
-// ============ STATISTIK ============
+// ============ Statistics ============
 let stats = {
   total: 0,
   correct: 0,
@@ -536,237 +577,354 @@ function resetStats() {
   stats = { total: 0, correct: 0 };
   saveStats();
   updateStatsDisplay();
-  toast("Statistik zurückgesetzt");
+  toast("Статистика сброшена");
 }
 
-// ============ QUIZ-ENGINE ============
-let selected = [], pool = [], idx = 0, score = 0, examMode = false;
+// ============ Quiz Engine ============
+let selected=[], pool=[], idx=0, score=0, examMode=false;
 
-function buildPool(keys) {
-  const out = [];
-  keys.forEach(k => { 
-    if (DATA[k]) out.push(...DATA[k]); 
-  });
+function buildPool(keys){
+  const out=[];
+  keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); });
   return shuffle(out);
 }
 
-function startQuiz(mode = "normal") {
-  const checked = $$("#catList input[type=checkbox]:checked").map(x => x.value);
-  if (checked.length === 0) { 
-    toast("Bitte Kategorie wählen!"); 
-    return; 
-  }
+function startQuiz(mode="normal"){
+  const checked = $$("#catList input[type=checkbox]:checked").map(x=>x.value);
+  if(checked.length===0){ toast("Bitte Kategorie wählen!"); return; }
+  selected=checked; examMode=(mode==="exam"); pool=buildPool(selected);
+  if(examMode && pool.length>10) pool=pool.slice(0,10);
+  idx=0; score=0;
   
-  selected = checked; 
-  examMode = (mode === "exam"); 
-  pool = buildPool(selected);
+  // Очищаем маркеры перед началом новой викторины
+  questionMarkers.clearLayers();
+  answerMarkers.clearLayers();
   
-  if (examMode && pool.length > 10) pool = pool.slice(0, 10);
-  
-  idx = 0; 
-  score = 0;
-  $("#quizPanel").style.display = "block";
-  $("#sidebar").style.display = "none";
-  $("#studyPanel").style.display = "none";
-  $("#statsPanel").style.display = "none";
-  
+  $("#quizPanel").style.display="block";
+  $("#sidebar").style.display="none";
+  $("#studyPanel").style.display="none";
+  $("#statsPanel").style.display="none";
+  $("#editPanel").style.display="none";
   showQuestion(true);
 }
 
-function showQuestion(first = false) {
-  const q = pool[idx]; 
-  if (!q) return;
+function showQuestion(first=false){
+  const q = pool[idx]; if(!q) return;
+  $("#progress").textContent=`Frage ${idx+1} von ${pool.length}`;
+  $("#progressFill").style.width = `${Math.round((idx)/pool.length*100)}%`;
+  $("#questionText").textContent=q.question;
+  const cont=$("#optionsContainer"); cont.innerHTML="";
   
-  $("#progress").textContent = `Frage ${idx + 1} von ${pool.length}`;
-  $("#progressFill").style.width = `${Math.round((idx) / pool.length * 100)}%`;
-  $("#questionText").textContent = q.question;
-  
-  const cont = $("#optionsContainer"); 
-  cont.innerHTML = "";
-  
-  // 4 Antwortmöglichkeiten verwenden
+  // Фильтруем пустые варианты ответов
   const validOptions = q.options.filter(opt => opt && opt.trim() !== '');
   
-  shuffle(validOptions).forEach((opt, i) => {
-    const d = document.createElement("div");
-    d.className = "option"; 
-    d.tabIndex = 0; 
-    d.dataset.correct = (opt === q.correct);
-    d.innerHTML = `<strong>${i + 1}.</strong> ${opt}`;
-    d.onclick = () => checkAnswer(d, opt);
-    d.onkeydown = (e) => { 
-      if (e.key === "Enter" || e.key === " ") { 
-        e.preventDefault(); 
-        d.click(); 
-      } 
-    };
+  shuffle(validOptions).forEach((opt,i)=>{
+    const d=document.createElement("div");
+    d.className="option"; d.tabIndex=0; d.dataset.correct=(opt===q.correct);
+    d.innerHTML=`<strong>${i+1}.</strong> ${opt}`;
+    d.onclick = ()=>checkAnswer(d,opt);
+    d.onkeydown = (e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } };
     cont.appendChild(d);
   });
+  $("#nextBtn").style.display="none";
+  $("#endBtns").style.display="none";
   
-  $("#nextBtn").style.display = "none";
-  $("#endBtns").style.display = "none";
+  // Озвучка
+  speak(q.question);
   
-  // Auf Karte zeigen wenn Koordinaten vorhanden
-  if (answerMarker) { 
-    map.removeLayer(answerMarker); 
-    answerMarker = null; 
-  }
-  
-  if (Array.isArray(q.coords)) { 
-    fly(q.coords, 16); 
-    answerMarker = L.marker(q.coords)
-      .addTo(map)
+  // Показываем на карте если есть координаты
+  if(Array.isArray(q.coords)){ 
+    fly(q.coords,16); 
+    
+    // Добавляем маркер вопроса
+    questionMarkers.clearLayers();
+    L.marker(q.coords, {icon: questionMarker})
+      .addTo(questionMarkers)
       .bindPopup(`<b>${q.name}</b><br>${q.question}`)
       .openPopup(); 
   }
 }
 
-function checkAnswer(el, opt) {
-  const q = pool[idx];
-  const ok = (opt === q.correct);
-  
-  // Klick-Events entfernen
-  $$("#optionsContainer .option").forEach(o => o.onclick = null);
-  
-  // Antwort markieren
-  el.classList.add(ok ? "correct" : "incorrect");
-  
-  if (!ok) { 
-    const correctOption = $$("#optionsContainer .option").find(x => x.dataset.correct === "true"); 
-    if (correctOption) correctOption.classList.add("correct"); 
+function checkAnswer(el,opt){
+  const q=pool[idx];
+  const ok=(opt===q.correct);
+  $$("#optionsContainer .option").forEach(o=>o.onclick=null);
+  el.classList.add(ok?"correct":"incorrect");
+  if(!ok){ 
+    const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); 
+    if(r) r.classList.add("correct"); 
   }
-  
-  if (ok) score++;
+  if(ok) score++;
 
-  // Statistik aktualisieren
+  // Обновление статистики
   stats.total++;
-  if (ok) stats.correct++;
+  if(ok) stats.correct++;
   saveStats();
   updateStatsDisplay();
 
-  $("#nextBtn").style.display = "block";
+  // Добавляем маркер ответа (правильный/неправильный)
+  if(Array.isArray(q.coords)){ 
+    const markerIcon = ok ? correctMarker : incorrectMarker;
+    L.marker(q.coords, {icon: markerIcon})
+      .addTo(answerMarkers)
+      .bindPopup(`<b>${q.name}</b><br>${ok ? "✅ Richtig" : "❌ Falsch"}`)
+      .openPopup(); 
+  }
+
+  speak(ok ? "Richtig. Gut gemacht." : `Leider falsch. Richtig ist: ${q.correct}.`);
+  $("#nextBtn").style.display="block";
 }
 
-function nextQuestion() {
+function nextQuestion(){
   idx++;
-  if (idx < pool.length) { 
-    showQuestion(); 
-  } else {
-    // Quiz beendet
-    $("#questionText").textContent = `Fertig! Punkte: ${score}/${pool.length}`;
-    $("#optionsContainer").innerHTML = "";
-    $("#progress").textContent = ""; 
-    $("#progressFill").style.width = "100%";
-    $("#nextBtn").style.display = "none"; 
-    $("#endBtns").style.display = "block";
+  if(idx<pool.length){ showQuestion(); }
+  else{
+    $("#questionText").textContent=`Fertig! Punkte: ${score}/${pool.length}`;
+    $("#optionsContainer").innerHTML="";
+    $("#progress").textContent=""; $("#progressFill").style.width="100%";
+    $("#nextBtn").style.display="none"; $("#endBtns").style.display="block";
+    speak(`Fertig. Punkte: ${score} von ${pool.length}.`);
   }
 }
 
-function backToMenu() { 
-  $("#quizPanel").style.display = "none"; 
-  $("#sidebar").style.display = "block"; 
-  $("#endBtns").style.display = "none"; 
+function backToMenu(){ 
+  $("#quizPanel").style.display="none"; 
+  $("#sidebar").style.display="block"; 
+  $("#endBtns").style.display="none"; 
 }
 
-function restartQuiz() { 
-  $("#endBtns").style.display = "none"; 
-  idx = 0; 
-  score = 0; 
-  pool = shuffle(pool); 
+function restartQuiz(){ 
+  $("#endBtns").style.display="none"; 
+  idx=0; 
+  score=0; 
+  pool=shuffle(pool); 
+  
+  // Очищаем маркеры при перезапуске
+  questionMarkers.clearLayers();
+  answerMarkers.clearLayers();
+  
   showQuestion(true); 
 }
 
-// ============ GÜRTEL LERNMODUS ============
-function openStudy() {
-  $("#studyPanel").style.display = "block";
-  $("#statsPanel").style.display = "none";
-  $("#sidebar").style.display = "none";
-  $("#quizPanel").style.display = "none";
-  
-  const list = $("#studyList"); 
-  list.innerHTML = "";
-  
-  GUERTEL_INTERSECTIONS.forEach((g, i) => {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.style.cssText = "padding:8px 10px;border-bottom:1px dashed var(--border);cursor:pointer";
-    div.innerHTML = `${i + 1}. ${g.title} — <span class="badge ${g.side === 'innerer' ? 'badge-inner' : 'badge-outer'}">${g.side} Gürtel</span>`;
-    div.onclick = () => {
+// ============ Gürtel Study ============
+function openStudy(){
+  $("#studyPanel").style.display="block";
+  $("#statsPanel").style.display="none";
+  $("#sidebar").style.display="none";
+  $("#quizPanel").style.display="none";
+  $("#editPanel").style.display="none";
+  const list=$("#studyList"); list.innerHTML="";
+  GUERTEL_INTERSECTIONS.forEach((g,i)=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.style.cssText="padding:8px 10px;border-bottom:1px dashed var(--border);cursor:pointer";
+    div.innerHTML = `${i+1}. ${g.title} — <span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side} Gürtel</span>`;
+    div.onclick = ()=> {
       fly(g.coords, 16);
-      if (gLayer) map.removeLayer(gLayer);
-      gLayer = L.marker(g.coords)
-        .addTo(map)
-        .bindPopup(`<b>${g.title}</b><br><span class="badge ${g.side === 'innerer' ? 'badge-inner' : 'badge-outer'}">${g.side} Gürtel</span>`)
+      // Очищаем предыдущие маркеры и добавляем новый
+      questionMarkers.clearLayers();
+      answerMarkers.clearLayers();
+      L.marker(g.coords, {icon: questionMarker})
+        .addTo(questionMarkers)
+        .bindPopup(`<b>${g.title}</b><br><span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side} Gürtel</span>`)
         .openPopup();
     };
     list.appendChild(div);
   });
-  
-  toast("Gürtel-Lernmodus geöffnet");
+  toast("Учебный режим Gürtel открыт");
 }
 
-// ============ UI-BINDINGS ============
-function loadCats() {
-  const wrap = $("#catList"); 
-  wrap.innerHTML = "";
+// ============ Question Editor ============
+function openEditor(){
+  $("#editPanel").style.display="block";
+  $("#statsPanel").style.display="none";
+  $("#sidebar").style.display="none";
+  $("#quizPanel").style.display="none";
+  $("#studyPanel").style.display="none";
   
+  // Заполняем select категориями
+  const categorySelect = $("#categorySelect");
+  categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
   THEMEN.forEach(t => {
+    const option = document.createElement("option");
+    option.value = t.key;
+    option.textContent = `${t.title} (${DATA[t.key]?.length || 0} вопросов)`;
+    categorySelect.appendChild(option);
+  });
+}
+
+function saveNewQuestion(){
+  const category = $("#categorySelect").value;
+  const name = $("#questionName").value.trim();
+  const question = $("#questionTextEdit").value.trim();
+  const options = [
+    $("#option1").value.trim(),
+    $("#option2").value.trim(),
+    $("#option3").value.trim(),
+    $("#option4").value.trim(),
+    $("#option5").value.trim(),
+    $("#option6").value.trim()
+  ].filter(opt => opt !== '');
+  
+  const correctIndex = parseInt($("#correctAnswer").value);
+  
+  if (!category || !name || !question || options.length < 2 || isNaN(correctIndex)) {
+    toast("Заполните все поля правильно!");
+    return;
+  }
+  
+  if (!DATA[category]) {
+    DATA[category] = [];
+  }
+  
+  const newQuestion = {
+    name,
+    question,
+    options,
+    correct: options[correctIndex]
+  };
+  
+  DATA[category].push(newQuestion);
+  saveQuestions();
+  updateCategoryCounts();
+  
+  // Очищаем форму
+  $("#questionName").value = "";
+  $("#questionTextEdit").value = "";
+  $("#option1").value = "";
+  $("#option2").value = "";
+  $("#option3").value = "";
+  $("#option4").value = "";
+  $("#option5").value = "";
+  $("#option6").value = "";
+  $("#correctAnswer").value = "";
+  
+  toast("Вопрос сохранен!");
+}
+
+function loadDefaultQuestions(){
+  if(confirm("Загрузить стандартные вопросы? Текущие вопросы будут потеряны.")){
+    DATA = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+    saveQuestions();
+    updateCategoryCounts();
+    toast("Стандартные вопросы загружены");
+  }
+}
+
+// ============ TTS (ElevenLabs) ============
+let ttsOn=true; 
+const audioEl=new Audio(); 
+audioEl.volume=1;
+let queue=[], playing=false;
+
+function speak(text){
+  if(!ttsOn || !text) return;
+  queue.push(text);
+  if(!playing) nextSpeak();
+}
+
+async function nextSpeak(){
+  if(queue.length===0){ playing=false; return; }
+  playing=true; const text=queue.shift();
+  try{
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,{
+      method:"POST",
+      headers:{ "xi-api-key": ELEVEN_API_KEY, "Content-Type":"application/json", "Accept":"audio/mpeg" },
+      body: JSON.stringify({ 
+        text: text, 
+        model_id:"eleven_multilingual_v2", 
+        voice_settings:{ 
+          stability:0.4, 
+          similarity_boost:0.8, 
+          style:0, 
+          use_speaker_boost:true 
+        } 
+      })
+    });
+    if(res.ok){
+      const blob = await res.blob();
+      audioEl.src = URL.createObjectURL(blob);
+      await audioEl.play();
+      audioEl.onended = ()=> nextSpeak();
+    }
+  }catch(e){
+    console.warn("TTS error",e); 
+    playing=false;
+  }
+}
+
+function stopSpeak(){ 
+  try{ 
+    audioEl.pause(); 
+    audioEl.currentTime=0; 
+  }catch{} 
+  queue=[]; 
+  playing=false; 
+}
+
+// ============ UI Bindings ============
+function loadCats(){
+  const wrap=$("#catList"); wrap.innerHTML="";
+  THEMEN.forEach(t=>{
     const count = DATA[t.key]?.length || 0;
-    const div = document.createElement("label"); 
-    div.className = "cat";
-    div.innerHTML = `
-      <input type="checkbox" value="${t.key}" checked> 
-      <div>${t.title} <span class="small">(${t.pages})</span></div> 
-      <span class="count">${count}</span>
-    `;
+    const div=document.createElement("label"); div.className="cat";
+    div.innerHTML = `<input type="checkbox" value="${t.key}" checked> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="count">${count}</span>`;
     wrap.appendChild(div);
   });
 }
 
-// Event Listeners
-$("#menuBtn").onclick = () => { 
-  const s = $("#sidebar"); 
-  s.style.display = (s.style.display === "block" ? "none" : "block"); 
+// Инициализация
+$("#menuBtn").onclick = ()=>{ 
+  const s=$("#sidebar"); 
+  s.style.display=(s.style.display==="block"?"none":"block"); 
 };
 
-$("#startBtn").onclick = () => startQuiz("normal");
-$("#examBtn").onclick = () => startQuiz("exam");
-$("#nextBtn").onclick = nextQuestion;
+$("#startBtn").onclick = ()=>{ startQuiz("normal"); };
+$("#examBtn").onclick  = ()=>{ startQuiz("exam"); };
+$("#nextBtn").onclick  = nextQuestion;
 $("#againBtn").onclick = restartQuiz;
-$("#backBtn").onclick = backToMenu;
+$("#backBtn").onclick  = backToMenu;
 $("#studyBtn").onclick = openStudy;
-$("#statsBtn").onclick = () => { 
-  $("#statsPanel").style.display = "block"; 
-  $("#studyPanel").style.display = "none"; 
-  $("#sidebar").style.display = "none"; 
-  $("#quizPanel").style.display = "none"; 
+$("#editBtn").onclick = openEditor;
+$("#statsBtn").onclick = ()=>{ 
+  $("#statsPanel").style.display="block"; 
+  $("#studyPanel").style.display="none"; 
+  $("#sidebar").style.display="none"; 
+  $("#quizPanel").style.display="none"; 
+  $("#editPanel").style.display="none";
+};
+$("#ttsToggleBtn").onclick = ()=>{ 
+  ttsOn=!ttsOn; 
+  toast(ttsOn?"🔊 Озвучка включена":"🔇 Озвучка выключена"); 
+  if(!ttsOn) stopSpeak(); 
 };
 $("#resetStats").onclick = resetStats;
+$("#saveQuestion").onclick = saveNewQuestion;
+$("#loadDefault").onclick = loadDefaultQuestions;
 
-// Tastatursteuerung
-document.addEventListener("keydown", (e) => {
-  if ($("#quizPanel").style.display !== "block") return;
-  
-  const i = ["1", "2", "3", "4"].indexOf(e.key);
-  if (i >= 0) { 
-    const opt = $$("#optionsContainer .option")[i]; 
-    if (opt && opt.onclick) opt.click(); 
+// Управление клавиатурой
+document.addEventListener("keydown",(e)=>{
+  if($("#quizPanel").style.display!=="block") return;
+  const i=["1","2","3","4","5","6"].indexOf(e.key);
+  if(i>=0){ 
+    const opt=$$("#optionsContainer .option")[i]; 
+    if(opt && opt.onclick) opt.click(); 
   }
-  
-  if (e.key === "Enter" && $("#nextBtn").style.display === "block") nextQuestion();
+  if(e.key==="Enter" && $("#nextBtn").style.display==="block") nextQuestion();
 });
 
-// ============ INITIALISIERUNG ============
-window.addEventListener("load", () => { 
+// Загрузка приложения
+window.addEventListener("load", ()=>{ 
   loadQuestions();
   loadStats();
   loadCats();
   toast("Willkommen! Wählen Sie Themen aus."); 
   
-  // Alle Panels außer Sidebar ausblenden
-  $("#statsPanel").style.display = "none";
-  $("#studyPanel").style.display = "none";
-  $("#quizPanel").style.display = "none";
+  // Скрываем все панели кроме сайдбара
+  $("#statsPanel").style.display="none";
+  $("#editPanel").style.display="none";
+  $("#studyPanel").style.display="none";
+  $("#quizPanel").style.display="none";
 });
 </script>
 </body>
