@@ -3,141 +3,132 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wiener Ortskunde – Interaktive Karte & Prüfungs‑Quiz</title>
+<title>Wiener Ortskunde – Interaktive Karte & Quiz</title>
 
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- pdf.js (для OCR-импорта) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";</script>
-
-<!-- Tesseract.js (OCR, читать kurs.pdf прямо в браузере) -->
-<script src="https://unpkg.com/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-
 <style>
 :root{
-  --brand:#2563eb; --brand-2:#60a5fa; --ok:#16a34a; --err:#dc2626; --warn:#f59e0b;
+  --brand:#2563eb; --brand-2:#60a5fa;
+  --ok:#16a34a; --err:#dc2626;
   --bg:#ffffff; --panel:#ffffff; --text:#0f172a; --muted:#6b7280;
-  --chip:#f8fafc; --border:#e5e7eb; --shadow:0 10px 30px rgba(2,6,23,.15); --radius:14px;
+  --chip:#f8fafc; --border:#e5e7eb;
+  --shadow:0 10px 30px rgba(2,6,23,.15);
+  --radius:14px;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#0b1020; --panel:#0f172a; --text:#e5e7eb; --muted:#94a3b8; --chip:#0b1225; --border:#1f2937; --shadow:0 10px 40px rgba(0,0,0,.45); }
+  :root{
+    --bg:#0b1020; --panel:#0f172a; --text:#e5e7eb; --muted:#94a3b8;
+    --chip:#0b1225; --border:#1f2937; --shadow:0 10px 40px rgba(0,0,0,.45);
+  }
 }
-*{ box-sizing:border-box } html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,Roboto,sans-serif; }
+*{ box-sizing:border-box }
+html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,Roboto,sans-serif; }
 #map{ position:fixed; inset:0; z-index:1; }
 
-/* topbar */
 .topbar{
-  position:fixed;
-  top:12px;
-  left:12px;
-  right:12px;
-  display:flex;
-  justify-content:space-between; /* меню слева, иконки справа */
-  gap:8px;
-  z-index:1500; /* ← поверх карты */
+  position:fixed; top:12px; left:12px; right:12px; z-index:1001;
+  display:flex; gap:8px; align-items:center; justify-content:space-between;
+  pointer-events:none;
 }
-
-.btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
+.btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
+      color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
 .btn.secondary{ background:#334155; }
-.iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.95; cursor:pointer; }
+.iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.9; cursor:pointer; }
+.iconbtn:hover{ opacity:1; }
 .spacer{ flex:1 }
 
-/* sidebar */
-.sidebar{ position:fixed; top:64px; right:12px; z-index:1000; width:420px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none; }
+.sidebar{
+  position:fixed; top:64px; left:12px; z-index:1000; width:360px; max-height:78vh; overflow:auto;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none;
+}
 .sidebar h3{ margin:0 0 8px 0; }
 .cat{ display:flex; align-items:center; gap:8px; padding:8px; margin:8px 0; background:var(--chip); border-left:4px solid var(--brand); border-radius:10px; }
-.cat .meta{ margin-left:auto; font-size:12px; color:var(--muted); }
-.small{ font-size:12px; color:var(--muted); }
-hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
+.cat .count{ margin-left:auto; color:var(--muted); font-size:12px; }
 
-/* quiz */
-.quiz-panel{ position:fixed; top:64px; right:12px; z-index:1000; width:500px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:none; }
-.question{ font-weight:800; margin:8px 0 10px; text-align:center; }
+.quiz-panel{
+  position:fixed; top:64px; right:12px; z-index:1000; width:380px; max-height:78vh; overflow:auto;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:none;
+}
+.question{ font-weight:700; margin:8px 0 10px; text-align:center; }
 .progress{ text-align:center; font-size:13px; color:var(--muted); }
 .progressbar{ height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; margin:8px 0 12px; }
 .progressbar-fill{ height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2)); width:0%; transition:width .25s ease; }
+
 .options{ display:grid; gap:8px; }
 .option{ padding:12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; background:transparent; }
 .option:hover{ border-color:var(--brand); background:rgba(37,99,235,.07); }
 .option.correct{ border-color:var(--ok); background:#f0fdf4; }
 .option.incorrect{ border-color:var(--err); background:#fef2f2; }
-.replay-row{ display:flex; gap:8px; justify-content:center; margin:6px 0 4px; }
+
 .next-btn,.end-btn{ margin-top:10px; width:100%; font-weight:800; border:none; border-radius:10px; padding:10px 14px; color:white; background:linear-gradient(180deg,var(--brand),#1e40af); cursor:pointer; }
 .end-btn.secondary{ background:#334155; }
 
-.panel{ position:fixed; top:64px; right:520px; z-index:1000; width:540px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:none; }
+.panel{
+  position:fixed; top:64px; right:410px; z-index:1000; width:460px; max-height:78vh; overflow:auto;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:none;
+}
+.panel h3{ margin:0 0 10px 0 }
+.row{ display:flex; gap:10px; flex-wrap:wrap; }
+.kbd{ font-family:ui-monospace,monospace; background:#111827; color:#fff; padding:2px 6px; border-radius:6px; }
 
-/* login */
-#loginModal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:2000; }
+.leaderboard .item{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px dashed var(--border); }
+.leaderboard .you{ background:rgba(37,99,235,.08); border-radius:8px; }
+
+#loginModal{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:2000;
+}
 #loginBox{ width:90%; max-width:380px; background:var(--panel); color:var(--text); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
 #loginBox h2{ margin:0 0 12px 0; }
 #loginBox input{ width:100%; padding:12px; margin:8px 0; border:1px solid var(--border); border-radius:10px; background:var(--chip); color:var(--text); }
 .login-btn{ width:100%; padding:12px; border:none; border-radius:10px; font-weight:800; background:linear-gradient(180deg,#ffcc66,#ff9933); cursor:pointer; }
 
-/* toast */
-.toast{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(17,24,39,.95); color:#fff; padding:10px 14px; border-radius:10px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-size:13px; }
+.toast{
+  position:fixed; bottom:16px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:rgba(17,24,39,.95); color:#fff; padding:10px 14px; border-radius:10px; box-shadow:var(--shadow);
+  opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-size:13px;
+}
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* Marker icons */
-.leaflet-div-icon { background: transparent; border: none; }
-.mk{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:900; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.9); }
-.mk.blue{ background:#2563eb; }
-.mk.green{ background:#16a34a; }
-.mk.red{ background:#dc2626; }
-.mk.pulse{ box-shadow:0 0 0 0 rgba(37,99,235,.45); animation:mkpulse 1.4s infinite; }
-@keyframes mkpulse{ 0%{ box-shadow:0 0 0 0 rgba(37,99,235,.45);} 70%{ box-shadow:0 0 0 16px rgba(37,99,235,0);} 100%{ box-shadow:0 0 0 0 rgba(37,99,235,0);} }
-
-/* Gürtel */
+/* Gürtel highlight */
 .badge{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:800; }
 .badge-inner{ background:#0ea5e9; color:#fff; }
 .badge-outer{ background:#f59e0b; color:#111; }
-
-/* оверлей процесса OCR */
-#ocrOverlay{ position:fixed; inset:0; background:rgba(15,23,42,.84); color:#fff; z-index:5000; display:none; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
-#ocrBar{ width:66%; height:12px; background:#0b1225; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px #334155; }
-#ocrBar > div{ height:100%; width:0%; background:linear-gradient(90deg,#22c55e,#84cc16); transition:width .25s; }
+.small{ font-size:12px; color:var(--muted); }
+hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 </style>
 </head>
 <body>
 
 <div id="map"></div>
 
+<!-- Topbar -->
 <div class="topbar">
   <button class="btn" id="menuBtn">☰ Themen</button>
   <div class="spacer"></div>
-  <button class="iconbtn" id="studyBtn" title="Учебный режим Gürtel">🧭</button>
+  <button class="iconbtn" id="studyBtn" title="Учебный режим Gürtel">🧭 Gürtel</button>
   <button class="iconbtn" id="leaderBtn" title="Лидерборд">🏆</button>
   <button class="iconbtn" id="statsBtn" title="Статистика">📊</button>
   <button class="iconbtn" id="ttsToggleBtn" title="Озвучка вкл/выкл">🔊</button>
   <button class="iconbtn" id="logoutBtn" title="Выйти">⎋</button>
 </div>
 
+<!-- Sidebar: Kategorien -->
 <div class="sidebar" id="sidebar">
-  <h3>🗂️ I. ORTSKUNDE – offizieller Fragenkatalog</h3>
+  <h3>🗂️ Themen (I. ORTSKUNDE – 23 Kapitel aus dem PDF)</h3>
   <div id="catList"></div>
-  <hr/>
-  <button id="startBtn" class="btn" style="width:100%;margin-top:6px;">▶️ Freies Quiz</button>
-  <button id="examBtn" class="btn secondary" style="width:100%;margin-top:8px;">📝 Prüfungsmodus (10 gemischt)</button>
-  <button id="officialBtn" class="btn secondary" style="width:100%;margin-top:8px;">✅ Amtlicher Block starten</button>
-  <p class="small" style="margin-top:8px">Hotkeys: <b>1..6</b> für Antworten, <b>Enter</b> = Weiter.</p>
-  <p class="small">Grundlage: Tabellen auf S. 6–28 (Adressen/Paare GÜRTEL), Tarif – S. 58–61.</p>
+  <button id="startBtn" class="btn" style="margin-top:10px;width:100%;">▶️ Quiz starten</button>
+  <button id="examBtn" class="btn secondary" style="margin-top:8px;width:100%;">📝 Prüfungsmodus (10 Fragen)</button>
+  <p class="small" style="margin-top:8px">Hotkeys: <span class="kbd">1..6</span> für Antworten, <span class="kbd">Enter</span> = Weiter.</p>
 </div>
 
+<!-- Quiz Panel -->
 <div class="quiz-panel" id="quizPanel" aria-live="polite">
   <div class="progress" id="progress"></div>
   <div class="progressbar"><div class="progressbar-fill" id="progressFill"></div></div>
-
   <div class="question" id="questionText"></div>
-
-  <div class="replay-row">
-    <button class="btn secondary" id="replayBtn" title="Повторить вопрос">🔁 Wiederholen</button>
-    <button class="btn secondary" id="replaySlowBtn" title="Повторить вопрос медленнее">🐢 Langsamer</button>
-  </div>
-  <div class="small" style="text-align:center;margin-top:-6px;margin-bottom:6px;">Browser‑TTS: «Langsamer» = 0.25×</div>
-
   <div class="options" id="optionsContainer"></div>
   <button class="next-btn" id="nextBtn" style="display:none;">Weiter →</button>
   <div id="endBtns" style="display:none;">
@@ -146,17 +137,21 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
   </div>
 </div>
 
-<div class="panel" id="studyPanel" style="display:none;">
-  <h3>🧭 Gürtel – Interaktive Kreuzungen</h3>
-  <p class="small">Клик по строке — отрисую перекрёсток (оси + сектор <span class="badge badge-inner">innerer</span>/<span class="badge badge-outer">äußerer</span>). Пары — как в учебнике (S.23 & 27).</p>
+<!-- Panel: Gürtel Study -->
+<div class="panel" id="studyPanel">
+  <h3>🧭 Учебный режим: Gürtel</h3>
+  <p class="small">Клик по строке — карта покажет **перекрёсток** (оси + сектор <span class="badge badge-inner">innerer</span>/<span class="badge badge-outer">äußerer</span>). Основано на страницах «GÜRTEL» и «nach dem GÜRTEL überquert» вашего курса. :contentReference[oaicite:3]{index=3}</p>
   <div id="studyList"></div>
 </div>
 
-<div class="panel" id="leaderPanel" style="display:none;">
+<!-- Panel: Leaderboard -->
+<div class="panel leaderboard" id="leaderPanel">
   <h3>🏆 Лидерборд</h3>
   <div id="leaderList"></div>
 </div>
-<div class="panel" id="statsPanel" style="display:none;">
+
+<!-- Panel: Stats -->
+<div class="panel" id="statsPanel">
   <h3>📊 Моя статистика</h3>
   <div id="myStats"></div>
 </div>
@@ -169,664 +164,434 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     <input type="password" id="loginPass" placeholder="Password">
     <input type="password" id="loginPass2" placeholder="Repeat Password" style="display:none;">
     <button class="login-btn" id="submitBtn">Log in</button>
-    <button class="login-btn" id="guestBtn" style="margin-top:8px;background:linear-gradient(180deg,#94a3b8,#475569);color:#fff;">Weiter ohne Login</button>
     <p id="loginError" style="color:#ef4444; font-size:12px;"></p>
     <div class="small">
       <a href="#" id="toRegister">Register</a> | <a href="#" id="toLogin">Login</a>
     </div>
-    <p class="small" style="margin-top:8px">
-      Hinweis: Wenn Auth‑Fehler <b>auth/unauthorized-domain</b>, добавьте домен GitHub Pages в
-      <i>Firebase Console → Authentication → Settings → Authorized domains</i>.
-    </p>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<!-- ====== ДАТАПАК (первые два раздела — 100%, остальные — по одному примеру) ====== -->
-<script type="application/json" id="data-pack">
-{
-  "meta": {
-    "source": "Kurs-PDF I. ORTSKUNDE (S. 6–28), Wiener Tarif (S. 58–61)",
-    "note": "Формулировки строго по PDF; для первых 2 разделов добавлены проверенные координаты."
-  },
-
-  "regierungs": [
-    {"name":"Parlament (Nationalrat und Bundesrat)","address":"Dr.-Karl-Renner-Ring 3","coords":[48.207989,16.359167]},
-    {"name":"Bundespräsident (Präsidentschaftskanzlei) [Hofburg]","address":"Ballhausplatz 1","coords":[48.208025,16.364581]},
-    {"name":"Bundeskanzleramt","address":"Ballhausplatz 2","coords":[48.208386,16.363781]},
-    {"name":"Bundesministerium für Inneres","address":"Herrengasse 7","coords":[48.209108,16.365931]},
-    {"name":"Bundesministerium für Europäische und Internationale Angelegenheiten","address":"Minoritenplatz 8","coords":[48.209347,16.364694]},
-    {"name":"Bundesministerium für Bildung, Wissenschaft und Forschung","address":"Minoritenplatz 5","coords":[48.209945,16.363575]},
-    {"name":"Bundesministerium für Digitalisierung und Wirtschaftsstandort","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Arbeit","address":"Taborstraße 1-3","coords":[48.212990,16.379061]},
-    {"name":"Bundesministerium für Finanzen","address":"Johannesgasse 5","coords":[48.205108,16.372069]},
-    {"name":"Bundesministerium für Klimaschutz, Umwelt, Energie, Mobilität, Innovation und Technologie","address":"Radetzkystraße 2","coords":[48.211219,16.386589]},
-    {"name":"Bundesministerium für Kunst, Kultur, öffentlichen Dienst und Sport","address":"Radetzkystraße 2","coords":[48.211219,16.386589]},
-    {"name":"Bundesministerium für Landwirtschaft, Regionen und Tourismus","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Soziales, Gesundheit, Pflege und Konsumentenschutz","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Justiz","address":"Museumstraße 7","coords":[48.205833,16.355278]},
-    {"name":"Bundesministerium für Landesverteidigung","address":"Roßauer Lände 1","coords":[48.218186,16.367650]},
-    {"name":"Landesregierung und Bürgermeister/Landeshauptmann (Rathaus)","address":"Rathausplatz 1","coords":[48.210800,16.357400]}
-  ],
-
-  "gerichte": [
-    {"name":"Verfassungsgerichtshof","address":"Freyung 8","coords":[48.211478,16.366125]},
-    {"name":"Verwaltungsgerichtshof","address":"Judenplatz 11","coords":[48.211600,16.370111]},
-    {"name":"Oberster Gerichtshof","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
-    {"name":"Oberlandesgericht Wien","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
-    {"name":"Oberstaatsanwaltschaft Wien","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
-    {"name":"Landesgericht für Zivilrechtssachen Wien","address":"Schmerlingplatz 10-11","coords":[48.206710,16.357590]},
-    {"name":"Landesgericht für Strafsachen","address":"Landesgerichtsstraße 11","coords":[48.213820,16.354970]},
-    {"name":"Justizanstalt Wien Josefstadt","address":"Wickenburggasse 18-20","coords":[48.213727,16.354119]},
-    {"name":"Rechnungshof","address":"Dampfschiffstraße 2","coords":[48.212610,16.388150]}
-  ],
-
-  "bundespolizei":[
-    {"name":"Bundespolizeidirektion Wien – Sicherheitsbüro","address":"Schottenring 7-9"}
-  ],
-  "stadtpolizei":[
-    {"name":"Stadtpolizeikommando Innere Stadt","address":"Am Hof 9"}
-  ],
-  "post":[
-    {"name":"Postfiliale 1010","address":"Fleischmarkt 19"}
-  ],
-  "medien":[
-    {"name":"ORF Zentrum Wien","address":"Hugo-Portisch-Gasse 1"}
-  ],
-  "kammern":[
-    {"name":"Wirtschaftskammer Wien","address":"Straße der Wiener Wirtschaft 1"}
-  ],
-  "bezirksaemter":[
-    {"name":"Magistratisches Bezirksamt für den 1. Bezirk","address":"Wipplingerstraße 8"}
-  ],
-  "hotels": [
-    {"name":"Hotel Sacher Wien","address":"Philharmonikerstraße 4"}
-  ],
-  "cafes":[
-    {"name":"Café Central","address":"Herrengasse 14 (Palais Ferstel)"}
-  ],
-  "heurige":[
-    {"name":"Heuriger Mayer am Pfarrplatz","address":"Pfarrplatz 2"}
-  ],
-  "friedhoefe":[
-    {"name":"Zentralfriedhof (Tor 2 / Verwaltung)","address":"Simmeringer Hauptstraße 234"}
-  ],
-  "kranken":[
-    {"name":"Allgemeines Krankenhaus der Stadt Wien (AKH)","address":"Währinger Gürtel 18-20"}
-  ],
-  "pension":[
-    {"name":"Haus Döbling (Pensionistenwohnhaus)","address":"Grinzinger Allee 26"}
-  ],
-  "kultur":[
-    {"name":"Wiener Staatsoper","address":"Opernring 2"}
-  ],
-  "kabarett":[
-    {"name":"Kabarett Simpl","address":"Wollzeile 36"}
-  ],
-  "unis": [
-    {"name":"Universität Wien","address":"Universitätsring 1"}
-  ],
-  "museen": [
-    {"name":"Albertina","address":"Albertinaplatz 1"}
-  ],
-  "bauten":[
-    {"name":"Karlskirche","address":"Kreuzherrengasse 1"}
-  ],
-
-  "guertel": [
-    {"pair":"Mariahilfer Straße → Sechshauser Straße","type":"nachGUE"},
-    {"pair":"Burggasse → Gablenzgasse","type":"nachGUE"},
-    {"pair":"Nußdorfer Straße × Währinger Gürtel = innerer Gürtel","type":"seite"}
-  ],
-
-  "tarif": [
-    {"q":"Wie hoch ist die Grundtaxe am Tag?","a":"3,80 €","distractors":["4,30 €","3,50 €","2,90 €"]},
-    {"q":"Wie hoch ist die Grundtaxe in der Nacht / an Sonn- und Feiertagen?","a":"4,30 €","distractors":["3,80 €","5,00 €","4,90 €"]},
-    {"q":"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?","a":"34,80 €","distractors":["28,00 €","40,00 €","20,00 €"]},
-    {"q":"Der Nachtzuschlag gilt von … bis … Uhr.","a":"23:00–06:00","distractors":["22:00–05:00","00:00–06:00","21:00–05:00"]}
-  ]
-}
-</script>
-
-<!-- ====== ПРИЛОЖЕНИЕ (логика) ====== -->
+<!-- Firebase + App -->
 <script type="module">
-/* ================= CONFIG ================= */
-/* УБРАН ElevenLabs: используем бесплатный Browser Speech Synthesis (ниже). */
-const GOOGLE_MAPS_API_KEY = ""; // можно оставить пустым (будет OSM/Nominatim)
-
-/* ================= Firebase ================= */
+// ============ Firebase ============
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqVNVOXqYlPryEvjIYkOyp3BrWMtRMlGg",
   authDomain: "wien-quiz.firebaseapp.com",
   databaseURL: "https://wien-quiz-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "wien-quiz",
-  storageBucket: "wien-quiz.appspot.com",
+  storageBucket: "wien-quiz.firebasestorage.app",
   messagingSenderId: "467695563938",
   appId: "1:467695563938:web:87b15a9b5de5d3764bd3fb",
   measurementId: "G-SN0SMY9NH2"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getDatabase(app);
 
-/* ================= helpers ================= */
+// ============ Helpers ============
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const toast = (m,ms=1900)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
+const toast = (m,ms=1500)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
 function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
 
-/* ================= map (safe init) ================= */
-let map=null;
-try{
-  if(window.L){
-    map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution:'© OpenStreetMap' }).addTo(map);
-  } else {
-    console.warn("Leaflet ist nicht geladen.");
-  }
-} catch(e){
-  console.warn("Map init error:", e);
-}
-let preMarker=null, gLayer=null, blinkTimer=null;
-const keptMarkers=[];
+// ============ Map ============
+const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+let answerMarker=null, gLayer=null;
+function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
 
-function icon(status='blue', pulse=false){
-  const sym = status==='green'?'✓':status==='red'?'✗':'•';
-  const cls = `mk ${status==='green'?'green':status==='red'?'red':'blue'} ${pulse?'pulse':''}`;
-  return (window.L && L.divIcon) ? L.divIcon({className:'', html:`<div class="${cls}">${sym}</div>`, iconSize:[26,26], iconAnchor:[13,13]}) : null;
-}
-function fly([lat,lng], zoom=16){ if(!map) return; map.flyTo([lat,lng], zoom, {duration:1.0}); }
-function clearViz(){
-  if(!map) return;
-  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
-  if(blinkTimer){ clearInterval(blinkTimer); blinkTimer=null; }
-}
-
-/* ——— геометрия для Gürtel-визуализаций ——— */
+// Geo helpers (для рисования перекрёстков)
 function project([lat,lng], bearingDeg, dist){
   const R=6378137, d=dist/R, br=bearingDeg*Math.PI/180, lat1=lat*Math.PI/180, lon1=lng*Math.PI/180;
   const lat2=Math.asin(Math.sin(lat1)*Math.cos(d)+Math.cos(lat1)*Math.sin(d)*Math.cos(br));
   const lon2=lon1+Math.atan2(Math.sin(br)*Math.sin(d)*Math.cos(lat1), Math.cos(d)-Math.sin(lat1)*Math.sin(lat2));
   return [lat2*180/Math.PI, lon2*180/Math.PI];
 }
-function semiCircle(latlng, bearing, radius, side){
+function semiCircle(latlng, bearing, radius, side="innerer"){
   let start=bearing-90, end=bearing+90;
   if(side==="äußerer"){ start=bearing+90; end=bearing+270; }
-  const pts=[]; for(let a=start; a<=end; a+=5) pts.push(project(latlng,a,radius)); pts.push(latlng); return pts;
+  const pts=[];
+  for(let a=start; a<=end; a+=5){ pts.push(project(latlng,a,radius)); }
+  pts.push(latlng);
+  return pts;
 }
-function drawIntersectionViz({center, gurtelBearing, side, streetName, continueName, blink="before"}){
-  if(!map || !window.L) return null;
-  clearViz();
-  const len=240, r=140;
-  const g1=project(center,gurtelBearing,len/2), g2=project(center,gurtelBearing+180,len/2);
-  const s1=project(center,gurtelBearing+90,len/2), s2=project(center,gurtelBearing+270,len/2);
-  const segG=L.polyline([g1,g2],{color:"#0ea5e9",weight:5}).addTo(map);
-  const segS=L.polyline([s1,s2],{color:"#22c55e",weight:5, dashArray:"6,6"}).addTo(map);
-  const wedge=L.polygon(semiCircle(center,gurtelBearing,r,side), {color:side==="innerer"?"#0ea5e9":"#f59e0b", weight:2, fillColor:side==="innerer"?"#38bdf8":"#fbbf24", fillOpacity:.18}).addTo(map);
-  const beforeSeg=L.polyline([s1,center],{color:"#ef4444",weight:6}).addTo(map);
-  const afterSeg=L.polyline([center,s2],{color:"#10b981",weight:6,opacity:0.25}).addTo(map);
-  const mk=L.marker(center, {icon:icon('blue',true)}).addTo(map).bindPopup(`<b>${streetName}</b> ⇄ <b>${continueName||"—"}</b><br><span class="badge ${side==='innerer'?'badge-inner':'badge-outer'}">${side} Gürtel</span>`).openPopup();
-  gLayer=L.layerGroup([segG,segS,wedge,beforeSeg,afterSeg,mk]).addTo(map); map.flyTo(center,17,{duration:1.0});
-  const blinkTarget=(blink==="after")? afterSeg : beforeSeg; let vis=true; blinkTimer=setInterval(()=>{ vis=!vis; blinkTarget.setStyle({opacity:vis?1:0.3}); }, 550);
-  return {beforeSeg, afterSeg, mk};
-}
-
-/* ================= Geocoding (Google -> OSM) + cache ================= */
-const GEO_CACHE = new Map(JSON.parse(localStorage.getItem("geo-cache")||"[]"));
-function saveGeoCache(){ localStorage.setItem("geo-cache", JSON.stringify(Array.from(GEO_CACHE.entries()))); }
-
-async function geocode(address){
-  if(!address) return null;
-  const citySuffix = /wien/i.test(address) ? "" : ", Wien, Österreich";
-  const full = address + citySuffix;
-  if(GEO_CACHE.has(full)) return GEO_CACHE.get(full);
-
-  // 1) Google (если указан ключ)
-  if(GOOGLE_MAPS_API_KEY){
-    try{
-      const u=`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(full)}&key=${GOOGLE_MAPS_API_KEY}`;
-      const r=await fetch(u); const j=await r.json();
-      if(j.status==="OK" && j.results && j.results[0]){
-        const g=j.results[0].geometry.location; const c=[g.lat,g.lng];
-        GEO_CACHE.set(full,c); saveGeoCache(); return c;
-      }
-    }catch(e){ console.warn("Google geocode fail",e); }
-  }
-  // 2) OSM / Nominatim
-  try{
-    const u=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0&q=${encodeURIComponent(full)}&email=wien-quiz@example.com`;
-    const r=await fetch(u, {headers:{'Accept-Language':'de'}});
-    const j=await r.json(); if(j && j[0]){ const c=[parseFloat(j[0].lat), parseFloat(j[0].lon)]; GEO_CACHE.set(full,c); saveGeoCache(); return c; }
-  }catch(e){ console.warn("OSM geocode fail",e); }
-  return null;
+function drawIntersection({coords, bearing, side, nameA, nameB}){
+  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
+  const len=180, r=120;
+  const a1=project(coords,bearing,len/2), a2=project(coords,bearing+180,len/2);
+  const b1=project(coords,bearing+90,len/2), b2=project(coords,bearing+270,len/2);
+  const segA=L.polyline([a1,a2],{color:"#0ea5e9",weight:5}).addTo(map);
+  const segB=L.polyline([b1,b2],{color:"#22c55e",weight:5, dashArray:"6,6"}).addTo(map);
+  const wedge=L.polygon(semiCircle(coords,bearing,r,side), {color: side==="innerer"?"#0ea5e9":"#f59e0b", weight:2, fillColor: side==="innerer"?"#38bdf8":"#fbbf24", fillOpacity:.18}).addTo(map);
+  const mk=L.marker(coords).addTo(map).bindPopup(`<b>${nameA}</b> × <b>${nameB}</b><br><span class="badge ${side==='innerer'?'badge-inner':'badge-outer'}">${side} Gürtel</span>`).openPopup();
+  gLayer=L.layerGroup([segA,segB,wedge,mk]).addTo(map);
+  fly(coords,16);
 }
 
-/* ================= Daten (пак + локальный оверрайд после OCR) ================= */
-const PACK_BASE = JSON.parse(document.getElementById('data-pack').textContent);
-const PACK_LOCAL = JSON.parse(localStorage.getItem("pack-override")||"{}");
-const PACK = {...PACK_BASE, ...PACK_LOCAL};
+// ============ DATA ============
+// Ключ ElevenLabs и голос — зашиты (как просили)
+const ELEVEN_API_KEY = "f3e700c3faf18f37d5b07200c0f83b5d22059752311d8c655afc5e0e8ba1188d";
+const ELEVEN_VOICE_ID = "ROYWaqtov1Lot9vQBM3y";
 
-/* Темы и «официальное» число вопросов (из учебника) */
+// 23 темы I. ORTSKUNDE (стр. 5 – оглавление) + наполнение из соответствующих страниц. :contentReference[oaicite:4]{index=4}
 const THEMEN = [
-  {key:"regierungs", title:"1) Regierungsgebäude (Ministerien)", pages:"S.6", official:16},
-  {key:"gerichte",   title:"2) Gerichtsgebäude", pages:"S.6–7", official:9},
-  {key:"bundespolizei", title:"3) Bundespolizeidirektion Wien (Polizeidienststellen)", pages:"S.7", official:3},
-  {key:"stadtpolizei",  title:"4) Stadtpolizeikommanden / Polizeiinspektionen", pages:"S.7–10", official:31},
-  {key:"post", title:"5) Post", pages:"S.6"},
-  {key:"medien", title:"6) Massenmedien", pages:"S.36"},
-  {key:"kammern", title:"7) Kammern", pages:"S.6"},
-  {key:"bezirksaemter", title:"8) Magistratische Bezirksämter (Amtshäuser)", pages:"S.8–9"},
-  {key:"hotels", title:"9) Beherbergungsbetriebe (Auswahl)", pages:"S.10–13"},
-  {key:"cafes", title:"10) Kaffeehäuser", pages:"S.14"},
-  {key:"heurige", title:"11) Bezirksnamen & Heurigenorte", pages:"S.15–16"},
-  {key:"friedhoefe", title:"12) Friedhöfe", pages:"S.16–18"},
-  {key:"kranken", title:"13) Krankenanstalten", pages:"S.17–19"},
-  {key:"pension", title:"14) Pensionistenwohnheime", pages:"S.19"},
-  {key:"kultur", title:"15) Kulturinstitute / Bühnenhäuser", pages:"S.19"},
-  {key:"kabarett", title:"15a) Kabaretts, Volksbühnen", pages:"S.19"},
-  {key:"unis", title:"16) Universitäten / Bildungsanstalten", pages:"S.20"},
-  {key:"museen", title:"17) Museen", pages:"S.20–22"},
-  {key:"bauten", title:"18) Bauten, Sehenswürdigkeiten, Hotels & Cafés", pages:"S.21–22"},
-  {key:"guertel", title:"19) … nachdem Sie den GÜRTEL überquert haben / GÜRTEL (Seiten)", pages:"S.23 & 27"},
-  {key:"donau", title:"20) … nachdem Sie die Brücke über DONAUKANAL / DONAU überquert haben", pages:"S.24"},
-  {key:"nummern", title:"21) Nummerierungssystem", pages:"S.24"},
-  {key:"strassgeo", title:"22) Straßengeographie (Allgemein)", pages:"S.25"},
-  {key:"wichtige", title:"23) Wichtige Straßen und Autobahnen", pages:"S.26"},
-  {key:"tarif", title:"Wiener Tarif", pages:"S.58–61"}
+ {key:"regierungs", title:"1) Regierungsgebäude", pages:"S.6"},
+ {key:"gerichte",   title:"2) Gerichtsgebäude", pages:"S.6–7"},
+ {key:"bundespolizei", title:"3) Bundespolizeidirektion Wien", pages:"S.7"},
+ {key:"stadtpolizei",  title:"4) Stadtpolizeikommanden / Polizeiinspektionen", pages:"S.7–10"},
+ {key:"post", title:"5) Post", pages:"S.6"},
+ {key:"medien", title:"6) Massenmedien", pages:"S.36 (APA) etc."},
+ {key:"kammern", title:"7) Kammern", pages:"(WKO etc.)"},
+ {key:"bezirksaemter", title:"8) Magistratische Bezirksämter (Amtshäuser)", pages:"S.8–9"},
+ {key:"hotels", title:"9) Beherbergungsbetriebe / Hotels (Auswahl)", pages:"S.10–13"},
+ {key:"cafes", title:"10) Kaffeehäuser", pages:"S.14"},
+ {key:"heurige", title:"11) Bezirksnamen & Heurigenorte", pages:"S.15–16"},
+ {key:"friedhoefe", title:"12) Friedhöfe", pages:"S.16–18"},
+ {key:"kranken", title:"13) Krankenanstalten", pages:"S.17–19"},
+ {key:"pension", title:"14) Pensionistenwohnheime", pages:"S.19"},
+ {key:"kultur",  title:"15) Kulturinstitute / Bühnenhäuser", pages:"S.19"},
+ {key:"kabarett",title:"15a) Kabaretts, Volksbühnen", pages:"S.19"},
+ {key:"unis",   title:"16) Universitäten / Bildungsanstalten", pages:"S.20"},
+ {key:"museen", title:"17) Museen", pages:"S.20–22"},
+ {key:"bauten", title:"18) Bauten, Sehenswürdigkeiten, Hotels & Cafés", pages:"S.21–22"},
+ {key:"guertel",title:"19) Nach dem GÜRTEL überquert + Gürtelseiten", pages:"S.23 & S.27"},
+ {key:"donau",  title:"20) Nach Brücken über DONAUKANAL/DONAU", pages:"S.24"},
+ {key:"nummern",title:"21) Nummerierungssystem", pages:"S.24"},
+ {key:"strassgeo", title:"22) Straßengeographie (Allgemein)", pages:"S.25"},
+ {key:"wichtige", title:"23) Wichtige Straßen und Autobahnen", pages:"S.26"},
+ // Дополнительно:
+ {key:"tarif", title:"Wiener Tarif (zusätzlich)", pages:"S.58–61"},
+ {key:"stvo",  title:"StVO (Auszug für Taxi)", pages:"S.62–75"},
+ {key:"kfg",   title:"KFG (Kraftfahrgesetz) – Pflichtfragen", pages:"S.76–80"},
+ {key:"arbeit",title:"Arbeits- und Sozialrecht", pages:"S.84–95"}
 ];
 
-/* Трансформация «имён + адресов» в вопросы «Wo befindet sich …?» (+ ГЮРТЕЛ и тариф) */
-function buildQuestionsFromPack(){
-  const data={};
-  for(const [key,items] of Object.entries(PACK)){
-    if(["meta","guertel","tarif"].includes(key)) continue;
-    if(!Array.isArray(items)) continue;
-    data[key]=items.map(it=>{
-      const q=`Wo befindet sich ${it.name}?`;
-      const right = it.address;
-      const distractors = shuffle(items.filter(o=>o.address!==right).map(o=>o.address)).slice(0,3);
-      return {name:it.name, address:it.address, coords:it.coords||null, question:q, options:shuffle([right,...distractors]), correct:right};
-    });
-  }
-  // GÜRTEL — примеры
-  data.guertel = [
-    {
-      name:"Wie heißen die nachfolgenden Straßen, nachdem Sie den GÜRTEL überquert haben?",
-      question:"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den GÜRTEL überquert haben?",
-      options:["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße"],
-      correct:"Sechshauser Straße",
-      viz:{center:[48.19555,16.33935], gurtelBearing:45, side:"innerer", streetName:"Mariahilfer Straße", continueName:"Sechshauser Straße"}
-    },
-    {
-      name:"Wie heißen die nachfolgenden Straßen, nachdem Sie den GÜRTEL überquert haben?",
-      question:"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den GÜRTEL überquert haben?",
-      options:["Gablenzgasse","Thaliastraße","Mariahilfer Straße","Winckelmannstraße"],
-      correct:"Gablenzgasse",
-      viz:{center:[48.20580,16.33890], gurtelBearing:45, side:"innerer", streetName:"Burggasse", continueName:"Gablenzgasse"}
-    },
-    {
-      name:"GÜRTEL (Seiten)",
-      question:"Ist die Kreuzung Nußdorfer Straße × Währinger Gürtel am inneren oder am äußeren Gürtel?",
-      options:["innerer Gürtel","äußerer Gürtel"],
-      correct:"innerer Gürtel",
-      viz:{center:[48.2332,16.3554], gurtelBearing:120, side:"innerer", streetName:"Nußdorfer Straße", continueName:"—"}
-    }
-  ];
-  // Тариф — Q/A
-  data.tarif = (PACK.tarif||[]).map(t=>{
-    const opts=shuffle([t.a,...(t.distractors||[])]).slice(0,4);
-    return {name:"Fragen & Antworten Wiener Tarif", question:t.q, options:opts, correct:t.a};
-  });
-  return data;
-}
-const DATA = buildQuestionsFromPack();
+// Вопросы (образцы и основа). Источники: соответствующие страницы PDF. :contentReference[oaicite:5]{index=5}
+const DATA = {
+  regierungs: [
+    { name:"Parlament", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correct:"Dr.-Karl-Renner-Ring 3", coords:[48.208200420886755, 16.35916158251087] },
+    { name:"Präsidentschaftskanzlei", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correct:"Ballhausplatz 1", coords:[48.20800169709753, 16.363951691458396] },
+    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correct:"Ballhausplatz 2", coords:[48.20854761977208, 16.363727653675692] },
+    { name:"BM Inneres", question:"Wo befindet sich das BM für Inneres?", options:["Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2"], correct:"Herrengasse 7", coords:[48.20925481780634, 16.365909640181602] },
+    { name:"BM Justiz", question:"Wo befindet sich das BM für Justiz?", options:["Museumstraße 7","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correct:"Museumstraße 7", coords:[48.20581717886796, 16.355142309499076] },
+    { name:"Rathaus", question:"Wo befindet sich das Rathaus?", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8"], correct:"Rathausplatz 1", coords:[48.21110695472529, 16.358082597852153] }
+  ],
+  gerichte: [
+    { name:"VfGH", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["Freyung 8","Judenplatz 11","Schmerlingplatz 10-11","Stubenring 1"], correct:"Freyung 8", coords:[48.210,16.364] },
+    { name:"VwGH", question:"Wo befindet sich der Verwaltungsgerichtshof?", options:["Judenplatz 11","Freyung 8","Stubenring 1","Ballhausplatz 2"], correct:"Judenplatz 11", coords:[48.211,16.369] },
+    { name:"OGH", question:"Wo befindet sich der Oberste Gerichtshof?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Herrengasse 7","Ballhausplatz 1"], correct:"Schmerlingplatz 10-11", coords:[48.207,16.357] },
+    { name:"LG Strafsachen", question:"Wo befindet sich das Landesgericht für Strafsachen?", options:["Landesgerichtsstraße 11","Schmerlingplatz 10-11","Herrengasse 7","Johannesgasse 5"], correct:"Landesgerichtsstraße 11", coords:[48.215,16.350] },
+    { name:"Rechnungshof", question:"Wo befindet sich der Rechnungshof?", options:["Dampfschiffstraße 2","Judenplatz 11","Schmerlingplatz 10-11","Landesgerichtsstraße 11"], correct:"Dampfschiffstraße 2", coords:[48.207,16.392] }
+  ],
+  // Стр. 7 Bundespolizei (Sicherheitsbüro, Fremdenpolizei, Verkehrsamt). :contentReference[oaicite:6]{index=6}
+  bundespolizei: [
+    { name:"Sicherheitsbüro (BPD Wien)", question:"Wo befindet sich das Sicherheitsbüro der BPD Wien?", options:["Schottenring 7-9","Hernalser Gürtel 6-12","Dierichgasse 27","Laxenburger Straße 36"], correct:"Schottenring 7-9", coords:[48.2156,16.3704] },
+    { name:"Fremdenpolizei", question:"Wo befindet sich das Fremdenpolizeiliche Büro (Wien)?", options:["Hernalser Gürtel 6-12","Schottenring 7-9","Dierichgasse 27","Wipplingerstraße 34"], correct:"Hernalser Gürtel 6-12", coords:[48.2189,16.3375] },
+    { name:"Verkehrsamt (Führerschein/Taxilenker)", question:"Wo befindet sich das Verkehrsamt (Führerschein/Taxilenker)?", options:["Dierichgasse 27","Schottenring 7-9","Hernalser Gürtel 6-12","Wagramer Straße 5"], correct:"Dierichgasse 27", coords:[48.1929,16.4075] }
+  ],
+  // Пару примеров PI по страницам 7–10 (остальные удобно дополнять в том же формате). :contentReference[oaicite:7]{index=7}
+  stadtpolizei: [
+    { name:"PI Innere Stadt", question:"Wo liegt die PI Innere Stadt (Beispiel)?", options:["Deutschmeisterplatz 3","Mariahilfer Straße 1","Landesgerichtsstraße 11","Herrengasse 7"], correct:"Deutschmeisterplatz 3", coords:[48.2146,16.3777] },
+    { name:"PI Mariahilf", question:"PI Mariahilf – wo?", options:["Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29","Nußdorfer Straße 28"], correct:"Amerlingstraße 33", coords:[48.1969,16.3483] }
+  ],
+  post: [
+    { name:"Post (Beispiel)", question:"Hauptpost (Beispiel) liegt am …", options:["Stubenring 1","Herrengasse 7","Schwedenplatz 2","Kärntner Straße 1"], correct:"Stubenring 1", coords:[48.2065,16.3819] }
+  ],
+  medien: [
+    // S.36: APA – Austria Presseagentur (IPZ) упоминается в маршрутах → используем как контрольный пункт. :contentReference[oaicite:8]{index=8}
+    { name:"APA – Austria Presseagentur", question:"Wo befindet sich APA (IPZ) / Media Print (Routenpunkt)?", options:["Lshaus? – Druckzentrum Media Print","Kirchengasse 1","Schottenring 10","Kärntner Ring 5"], correct:"Lshaus? – Druckzentrum Media Print", coords:[48.264,16.462] }
+  ],
+  kammern: [
+    { name:"Wirtschaftskammer Wien (Beispiel)", question:"Wo befindet sich die WKO Wien (Beispiel)?", options:["Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4"], correct:"Stubenring 8-10", coords:[48.2058,16.3797] }
+  ],
+  bezirksaemter: [
+    { name:"Magistratisches Bezirksamt 1", question:"Amtshaus des 1. Bezirks liegt …", options:["Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8"], correct:"Wipplingerstraße 8", coords:[48.2134,16.3686] }
+  ],
+  // Отели/кафе – по спискам S.10–14 добавлены примеры. :contentReference[oaicite:9]{index=9}
+  hotels: [
+    { name:"Hotel Sacher", question:"Wo befindet sich das Hotel Sacher?", options:["Philharmonikerstraße 4","Kärntner Ring 1","Am Heumarkt 35-37","Albertinaplatz 1"], correct:"Philharmonikerstraße 4", coords:[48.2039,16.3692] },
+    { name:"Hilton Vienna Park", question:"Wo befindet sich Hilton Vienna Park?", options:["Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2"], correct:"Am Stadtpark 1", coords:[48.2055,16.3828] }
+  ],
+  cafes: [
+    { name:"Café Central", question:"Café Central liegt …", options:["Herrengasse 14","Rathausplatz 1","Judenplatz 11","Albertinaplatz 1"], correct:"Herrengasse 14", coords:[48.2108,16.3653] },
+    { name:"Café Landtmann", question:"Café Landtmann liegt …", options:["Universitätsring 4","Opernring 2","Kärntner Straße 10","Schwarzenbergplatz 1"], correct:"Universitätsring 4", coords:[48.2107,16.3604] }
+  ],
+  heurige: [
+    { name:"Heurigenorte (Beispiel)", question:"Zum 19. Bezirk gehört als Heurigenort …", options:["Grinzing","Stammersdorf","Sievering","Jedlesee"], correct:"Grinzing", coords:[48.2594,16.3359] }
+  ],
+  friedhoefe: [
+    { name:"Zentralfriedhof (Tor 2)", question:"Wo befindet sich der Haupteingang (Tor 2)?", options:["Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12"], correct:"Simmeringer Hauptstraße 234", coords:[48.1528,16.4337] }
+  ],
+  kranken: [
+    { name:"AKH Wien", question:"Wo befindet sich das AKH?", options:["Währinger Gürtel 18-20","Landstraßer Hauptstraße 1","Schönbrunner Straße 100","Kärntner Ring 1"], correct:"Währinger Gürtel 18-20", coords:[48.2202,16.3451] },
+    { name:"SMZ Süd (Kaiser-Franz-Josef-Spital)", question:"Adresse des SMZ Süd?", options:["Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10"], correct:"Kundratstraße 3", coords:[48.1589,16.3702] }
+  ],
+  pension: [
+    { name:"Pensionistenwohnheim (Beispiel)", question:"Wohnheim in der Seegasse liegt im …", options:["9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk"], correct:"9. Bezirk", coords:[48.2217,16.3617] }
+  ],
+  kultur: [
+    { name:"Burgtheater", question:"Adresse vom Burgtheater?", options:["Universitätsring 2","Opernring 2","Kärntner Straße 1","Schottenring 10"], correct:"Universitätsring 2", coords:[48.2105,16.3600] }
+  ],
+  kabarett: [
+    { name:"Kabarett Simpl", question:"Wo ist das Kabarett Simpl?", options:["Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14"], correct:"Wollzeile 36", coords:[48.2079,16.3772] }
+  ],
+  unis: [
+    { name:"Universität Wien", question:"Adresse der Universität Wien?", options:["Universitätsring 1","Karlsplatz 13","Schottenring 8","Schillerplatz 3"], correct:"Universitätsring 1", coords:[48.2130,16.3607] },
+    { name:"TU Wien", question:"Adresse der Technischen Universität Wien?", options:["Karlsplatz 13","Universitätsring 1","Währinger Straße 25","Schottenring 10"], correct:"Karlsplatz 13", coords:[48.1995,16.3690] }
+  ],
+  museen: [
+    { name:"Albertina", question:"Wo liegt die Albertina?", options:["Albertinaplatz 1","Museumsplatz 1","Mariahilfer Straße 1","Stephansplatz 1"], correct:"Albertinaplatz 1", coords:[48.2043,16.3686] },
+    { name:"Naturhistorisches Museum", question:"Wo liegt das NHM?", options:["Maria-Theresien-Platz","Heldenplatz","Museumsplatz 1","Burgring 1"], correct:"Maria-Theresien-Platz", coords:[48.2056,16.3613] }
+  ],
+  bauten: [
+    { name:"Hofburg – Heldenplatz", question:"Hofburg/Heldenplatz gehört zu …", options:["Ringstraße","Kärntnerring","Gürtel","Franz-Josefs-Kai"], correct:"Ringstraße", coords:[48.2066,16.3636] }
+  ],
+  // GÜRTEL-пары (S.23) и «innerer/äußerer» (S.27). :contentReference[oaicite:10]{index=10}
+  guertel: [
+    // Тип 1: inner/outer вопрос + визуализация
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Mariahilfer Straße × Mariahilfer Gürtel)", options:["innerer Gürtel","äußerer Gürtel"], correct:"innerer Gürtel", coords:[48.1956,16.3394], viz:{coords:[48.1956,16.3394], bearing:45, side:"innerer", nameA:"Gürtel", nameB:"Mariahilfer Straße"} },
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Nußdorfer Straße × Währinger Gürtel)", options:["innerer Gürtel","äußerer Gürtel"], correct:"innerer Gürtel", coords:[48.2332,16.3554], viz:{coords:[48.2332,16.3554], bearing:120, side:"innerer", nameA:"Gürtel", nameB:"Nußdorfer Straße"} },
+    // Тип 2: «Как называется после Gürtel»
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den Gürtel gequert haben?", options:["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße"], correct:"Sechshauser Straße", coords:[48.1935,16.3354], viz:{coords:[48.1956,16.3394], bearing:45, side:"innerer", nameA:"Mariahilfer Straße", nameB:"Sechshauser Straße"} },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den Gürtel gequert haben?", options:["Lerchenfelder Gürtel","Gablenzgasse","Thaliastraße","Mariahilfer Straße"], correct:"Gablenzgasse", coords:[48.2058,16.3389], viz:{coords:[48.2058,16.3389], bearing:45, side:"innerer", nameA:"Burggasse", nameB:"Gablenzgasse"} },
+  ],
+  // DONAUKANAL — пример (остальное удобно дополнять). :contentReference[oaicite:11]{index=11}
+  donau: [
+    { name:"Schwedenbrücke", question:"Welche Brücke verbindet Rotenturmstraße mit der Taborstraße (über den Donaukanal)?", options:["Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke"], correct:"Schwedenbrücke", coords:[48.2125,16.3783] }
+  ],
+  nummern: [
+    { name:"Nummerierung", question:"Wie werden die Häuser in Wien nummeriert?", options:[
+      "Ungerade links / gerade rechts stadtauswärts", "Gerade links / ungerade rechts stadtauswärts", "Fortlaufend im Uhrzeigersinn", "Nur ungerade Nummern in Wien"
+    ], correct:"Ungerade links / gerade rechts stadtauswärts", coords:[48.206,16.372] }
+  ],
+  strassgeo: [
+    { name:"Praterstern – auswärts führende Straßen", question:"Nennen Sie zwei stadtauswärts führende Straßen vom Praterstern.", options:["Praterstraße & Ausstellungsstraße","Kärntner Straße & Opernring","Mariahilfer Straße & Burggasse","Währinger Straße & Hernalser Hauptstraße"], correct:"Praterstraße & Ausstellungsstraße", coords:[48.2167,16.3925] }
+  ],
+  wichtige: [
+    { name:"Ringstraße – Teil", question:"Zum Ring gehören …", options:["Opernring / Burgring / Universitätsring","Kärntner Straße / Graben","Gürtel / Triester Straße","Donauufer Autobahn"], correct:"Opernring / Burgring / Universitätsring", coords:[48.2053,16.3685] }
+  ],
+  // Дополнительно: Wiener Tarif (S.58–61) :contentReference[oaicite:12]{index=12}
+  tarif: [
+    { name:"Grundtaxe", question:"Wie hoch ist die Grundtaxe am Tag?", options:["3,80 €","4,30 €","3,50 €","2,90 €"], correct:"3,80 €" },
+    { name:"Grundtaxe Nacht", question:"Wie hoch ist die Grundtaxe nachts/So/Feiertag?", options:["4,30 €","3,80 €","5,00 €","4,90 €"], correct:"4,30 €" },
+    { name:"Wartezeit", question:"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?", options:["34,80 €","28,00 €","40,00 €","20,00 €"], correct:"34,80 €" },
+    { name:"Nachtzeit", question:"Ab wann gilt der Nachtzuschlag?", options:["23:00–06:00","22:00–05:00","00:00–06:00","21:00–05:00"], correct:"23:00–06:00" }
+  ],
+  // StVO/KFG/Arbeitsrecht – по видам типовых вопросов. :contentReference[oaicite:13]{index=13}
+  stvo: [
+    { name:"Wohnstraße", question:"Dürfen Taxis durch Wohnstraßen durchfahren?", options:["Nur Schrittgeschwindigkeit (4–5 km/h)","Ja, ohne Einschränkung","Nein, verboten"], correct:"Nur Schrittgeschwindigkeit (4–5 km/h)" },
+    { name:"Rettungsgasse", question:"Wo muss eine Rettungsgasse gebildet werden?", options:["Auf Autobahnen & Schnellstraßen","Nur im Ortsgebiet","Nirgendwo"], correct:"Auf Autobahnen & Schnellstraßen" }
+  ],
+  kfg: [
+    { name:"Winterreifenpflicht", question:"Für Taxis gilt Winterreifenpflicht …", options:["1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)","1. Okt – 1. März","Ganzjährig","Nur bei Schnee"], correct:"1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)" }
+  ],
+  arbeit: [
+    { name:"Mindestlohn (Kollektivvertrag) – Info", question:"Der KV-Mindestlohn im Taxigewerbe gilt …", options:["Österreichweit (Bundesgebiet)","Nur in Wien","Nur für Unternehmer"], correct:"Österreichweit (Bundesgebiet)" }
+  ]
+};
 
-/* ================= Gürtel Study ================= */
+// Gürtel-узлы для учебного режима (основные из курса). :contentReference[oaicite:14]{index=14}
 const GUERTEL_INTERSECTIONS = [
-  { title:"Mariahilfer Straße × Mariahilfer Gürtel", side:"innerer", coords:[48.19555,16.33935], bearing:45 },
-  { title:"Burggasse × Neubaugürtel",                side:"innerer", coords:[48.20580,16.33890], bearing:45 },
-  { title:"Thaliastraße × Lerchenfelder Gürtel",     side:"innerer", coords:[48.20940,16.33670], bearing:45 },
-  { title:"Hernalser Hauptstraße × Hernalser Gürtel",side:"innerer", coords:[48.21850,16.33260], bearing:45 },
-  { title:"Nußdorfer Straße × Währinger Gürtel",     side:"innerer", coords:[48.23320,16.35540], bearing:120 },
-  { title:"Triester Straße × Gürtel",                side:"äußerer", coords:[48.17480,16.35580], bearing:30 }
+  { title:"Mariahilfer Straße × Mariahilfer Gürtel", side:"innerer", coords:[48.1956,16.3394], bearing:45 },
+  { title:"Nußdorfer Straße × Währinger Gürtel", side:"innerer", coords:[48.2332,16.3554], bearing:120 },
+  { title:"Burggasse × Neubaugürtel", side:"innerer", coords:[48.2058,16.3389], bearing:45 },
+  { title:"Thaliastraße × Lerchenfelder Gürtel", side:"innerer", coords:[48.2094,16.3367], bearing:45 },
+  { title:"Hernalser Hauptstraße × Hernalser Gürtel", side:"innerer", coords:[48.2185,16.3326], bearing:45 },
+  { title:"Ottakringer Straße × Ottakringer Gürtel", side:"äußerer", coords:[48.2148,16.3200], bearing:45 },
+  { title:"Triester Straße × Gürtel", side:"äußerer", coords:[48.1748,16.3558], bearing:30 },
+  { title:"Schönbrunner Straße × Margareten Gürtel", side:"innerer", coords:[48.1876,16.3419], bearing:35 }
 ];
 
-/* ================= Quiz engine ================= */
-let selected=[], pool=[], idx=0, score=0, examMode=false, officialMode=false;
-let lastQuestionText="";
+// ============ Quiz Engine ============
+let selected=[], pool=[], idx=0, score=0, examMode=false;
 
-function availableCount(key){ return (DATA[key]||[]).length; }
-function buildPool(keys){ const out=[]; keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); }); return shuffle(out); }
-
-function openQuiz(){
-  $("#quizPanel").style.display="block"; $("#sidebar").style.display="none";
-  $("#studyPanel").style.display="none"; $("#leaderPanel").style.display="none"; $("#statsPanel").style.display="none";
+function buildPool(keys){
+  const out=[];
+  keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); });
+  return shuffle(out);
 }
-
-function detectCat(q){ for(const k of Object.keys(DATA)) if(DATA[k].includes(q)) return k; return "misc"; }
-
-async function coordsFor(q){
-  if(q.coords && Array.isArray(q.coords)) return q.coords;
-  const c = await geocode(q.address);
-  return c;
+function startQuiz(mode="normal"){
+  const checked = $$("#catList input[type=checkbox]:checked").map(x=>x.value);
+  if(checked.length===0){ toast("Bitte Kategorie wählen!"); return; }
+  selected=checked; examMode=(mode==="exam"); pool=buildPool(selected);
+  if(examMode && pool.length>10) pool=pool.slice(0,10);
+  idx=0; score=0;
+  $("#quizPanel").style.display="block";
+  $("#sidebar").style.display="none";
+  $("#studyPanel").style.display="none";
+  $("#leaderPanel").style.display="none";
+  $("#statsPanel").style.display="none";
+  showQuestion(true);
 }
-
-async function preLocate(q){
-  if(!map || !window.L) return;
-  const coords = await coordsFor(q);
-  if(!coords) return;
-  if(preMarker){ map.removeLayer(preMarker); preMarker=null; }
-  clearViz();
-  preMarker = L.marker(coords, {icon:icon('blue',true)}).addTo(map);
-  fly(coords, 16);
-}
-
-async function showQuestion(first=false){
-  const q=pool[idx]; if(!q) return;
-
-  // полёт к месту ДО вопроса + синяя метка
-  await preLocate(q);
-
+function showQuestion(first=false){
+  const q = pool[idx]; if(!q) return;
   $("#progress").textContent=`Frage ${idx+1} von ${pool.length}`;
-  $("#progressFill").style.width=`${Math.round((idx)/pool.length*100)}%`;
+  $("#progressFill").style.width = `${Math.round((idx)/pool.length*100)}%`;
   $("#questionText").textContent=q.question;
-
   const cont=$("#optionsContainer"); cont.innerHTML="";
-  const options = (q.options && q.options.length) ? q.options : [q.correct || q.address];
-  shuffle(options).forEach((opt,i)=>{
+  shuffle(q.options).forEach((opt,i)=>{
     const d=document.createElement("div");
-    d.className="option"; d.tabIndex=0; d.dataset.correct=(opt===(q.correct||q.address));
+    d.className="option"; d.tabIndex=0; d.dataset.correct=(opt===q.correct);
     d.innerHTML=`<strong>${i+1}.</strong> ${opt}`;
-    d.onclick=()=>checkAnswer(d,opt);
-    d.onkeydown=(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } };
+    d.onclick = ()=>checkAnswer(d,opt);
+    d.onkeydown = (e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } };
     cont.appendChild(d);
   });
-  $("#nextBtn").style.display="none"; $("#endBtns").style.display="none";
-
-  if(q.viz){
-    const v=drawIntersectionViz(q.viz);
-    q._vizSegments=v;
-  }
-
-  lastQuestionText = `${q.name||""}. ${q.question}`;
-  speak(lastQuestionText, 0.5); // по умолчанию медленнее
+  $("#nextBtn").style.display="none";
+  $("#endBtns").style.display="none";
+  // Озвучка
+  speak(`${q.name}. ${q.question}`);
+  // Если это Gürtel-вопрос с визуализацией — нарисуем перекрёсток (без подсказок по ответу)
+  if(q.viz){ drawIntersection({coords:q.viz.coords, bearing:q.viz.bearing, side:q.viz.side, nameA:q.viz.nameA||"Gürtel", nameB:q.viz.nameB||"Straße"}); }
 }
-
-async function checkAnswer(el,opt){
-  const q=pool[idx]; const right=(opt===(q.correct||q.address));
+function checkAnswer(el,opt){
+  const q=pool[idx];
+  const ok=(opt===q.correct);
   $$("#optionsContainer .option").forEach(o=>o.onclick=null);
-  el.classList.add(right?"correct":"incorrect");
-  if(!right){ const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); if(r) r.classList.add("correct"); }
-  if(right) score++;
+  el.classList.add(ok?"correct":"incorrect");
+  if(!ok){ const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); if(r) r.classList.add("correct"); }
+  if(ok) score++;
 
-  // показать кнопку "Далее"
+  if(answerMarker){ map.removeLayer(answerMarker); answerMarker=null; }
+  if(Array.isArray(q.coords)){ fly(q.coords,16); answerMarker=L.marker(q.coords).addTo(map).bindPopup(`<b>${q.name}</b><br>${q.correct}`).openPopup(); }
+
+  speak(ok ? "Richtig. Gut gemacht." : `Leider falsch. Richtig ist: ${q.correct}.`);
   $("#nextBtn").style.display="block";
 
-  // изменить цвет метки и оставить её (если есть карта)
-  try{
-    if(map && window.L && preMarker){
-      preMarker.setIcon(icon(right?'green':'red', false));
-      keptMarkers.push(preMarker);
-      preMarker=null;
-    } else if(map && window.L && q.address){
-      const coords = await coordsFor(q);
-      if(coords){
-        const m=L.marker(coords,{icon:icon(right?'green':'red',false)}).addTo(map);
-        keptMarkers.push(m);
-      }
-    }
-  }catch{}
-
-  if(q._vizSegments){
-    if(blinkTimer){ clearInterval(blinkTimer); blinkTimer=null; }
-    q._vizSegments.beforeSeg.setStyle({opacity:0.25});
-    q._vizSegments.afterSeg.setStyle({opacity:1});
-    if(q._vizSegments.mk){ q._vizSegments.mk.setIcon(icon(right?'green':'red')); }
-  }
-
-  if(right){
-    speak(`Richtig. ${q.correct || q.address}.`, 0.5);
-  }else{
-    speak(`Leider falsch. Richtig ist: ${q.correct || q.address}.`, 0.5);
-  }
-
-  // статистика
-  sess.total++; if(right) sess.correct++;
-  const cat=detectCat(q); if(!sess.byCat[cat]) sess.byCat[cat]={total:0,correct:0}; sess.byCat[cat].total++; if(right) sess.byCat[cat].correct++;
+  // session stats
+  sess.total++; if(ok) sess.correct++;
+  const cat = detectCat(q); if(!sess.byCat[cat]) sess.byCat[cat]={total:0,correct:0}; sess.byCat[cat].total++; if(ok) sess.byCat[cat].correct++;
 }
-
 function nextQuestion(){
   idx++;
   if(idx<pool.length){ showQuestion(); }
   else{
     $("#questionText").textContent=`Fertig! Punkte: ${score}/${pool.length}`;
-    $("#optionsContainer").innerHTML=""; $("#progress").textContent=""; $("#progressFill").style.width="100%";
-    $("#nextBtn").style.display="none"; $("#endBtns").style.display="block"; clearViz();
-    speak(`Fertig. Punkte: ${score} von ${pool.length}.`, 0.5);
+    $("#optionsContainer").innerHTML="";
+    $("#progress").textContent=""; $("#progressFill").style.width="100%";
+    $("#nextBtn").style.display="none"; $("#endBtns").style.display="block";
+    speak(`Fertig. Punkte: ${score} von ${pool.length}.`);
     saveSession();
   }
 }
-function backToMenu(){ $("#quizPanel").style.display="none"; $("#sidebar").style.display="block"; $("#endBtns").style.display="none"; clearViz(); }
+function backToMenu(){ $("#quizPanel").style.display="none"; $("#sidebar").style.display="block"; $("#endBtns").style.display="none"; }
 function restartQuiz(){ $("#endBtns").style.display="none"; idx=0; score=0; pool=shuffle(pool); showQuestion(true); }
-
-async function startQuiz(mode="normal"){
-  const checked=$$("#catList input[type=checkbox]:checked").map(x=>x.value);
-  if(checked.length===0){ toast("Bitte Kategorie wählen!"); return; }
-  selected=checked; examMode=(mode==="exam"); officialMode=false;
-  pool=buildPool(selected);
-  if(examMode && pool.length>10) pool=pool.slice(0,10);
-  idx=0; score=0; openQuiz();
-  await showQuestion(true);
+function detectCat(q){
+  for(const k of Object.keys(DATA)) if(DATA[k].includes(q)) return k;
+  return "misc";
 }
 
-async function startOfficialBlock(){
-  const checked=$$("#catList input[type=checkbox]:checked").map(x=>x.value);
-  if(checked.length!==1){ toast("Wählen Sie genau EINEN Block (z.B. 1,2,3…)"); return; }
-  const key=checked[0];
-  const def=THEMEN.find(t=>t.key===key);
-  const needed=def?.official || availableCount(key);
-  const arr=(DATA[key]||[]).slice(0,needed);
-  if(arr.length<needed){ toast(`Block unvollständig: ${arr.length}/${needed}.`); }
-  selected=[key]; officialMode=true; examMode=false;
-  pool=shuffle(arr); idx=0; score=0; openQuiz();
-  await showQuestion(true);
-}
-
-/* ================= Gürtel Study ================= */
+// ============ Gürtel Study ============
 function openStudy(){
-  $("#studyPanel").style.display="block"; $("#leaderPanel").style.display="none"; $("#statsPanel").style.display="none";
-  $("#sidebar").style.display="none"; $("#quizPanel").style.display="none";
+  $("#studyPanel").style.display="block";
+  $("#leaderPanel").style.display="none";
+  $("#statsPanel").style.display="none";
+  $("#sidebar").style.display="none";
+  $("#quizPanel").style.display="none";
   const list=$("#studyList"); list.innerHTML="";
-  [
-    ...GUERTEL_INTERSECTIONS
-  ].forEach((g,i)=>{
+  GUERTEL_INTERSECTIONS.forEach((g,i)=>{
     const div=document.createElement("div");
+    div.className="item";
     div.style.cssText="padding:8px 10px;border-bottom:1px dashed var(--border);cursor:pointer";
-    div.innerHTML=`${i+1}. ${g.title} — <span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side}</span>`;
-    div.onclick=()=> drawIntersectionViz({center:g.coords, gurtelBearing:g.bearing, side:g.side, streetName:g.title.split(' × ')[0], continueName:g.title.split(' × ')[1], blink:"before"});
+    div.innerHTML = `${i+1}. ${g.title} — <span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side}</span>`;
+    div.onclick = ()=> drawIntersection({coords:g.coords, bearing:g.bearing, side:g.side, nameA:"Gürtel", nameB:g.title.split(' × ')[0]});
     list.appendChild(div);
   });
   toast("Учебный режим Gürtel открыт");
 }
 
-/* ================= Auth ================= */
-let isReg=false, guest=false;
+// ============ Auth ============
+let isReg=false;
 $("#toRegister").onclick=(e)=>{e.preventDefault();isReg=true;$("#formTitle").textContent="Register";$("#loginPass2").style.display="block";$("#submitBtn").textContent="Register";};
 $("#toLogin").onclick=(e)=>{e.preventDefault();isReg=false;$("#formTitle").textContent="Login";$("#loginPass2").style.display="none";$("#submitBtn").textContent="Log in";};
-$("#guestBtn").onclick=()=>{
-  guest=true;
-  $("#loginModal").style.display="none";
-  $("#sidebar").style.display="block"; // показать меню в гостевом режиме
-  loadCats(); loadMyStats(); loadLeaderboard();
-  toast("Gastmodus: Daten nur lokal");
-};
 $("#submitBtn").onclick=async()=>{
   const email=$("#loginEmail").value.trim(), p1=$("#loginPass").value.trim(), p2=$("#loginPass2").value.trim();
-  $("#loginError").textContent="";
   try{
-    if(isReg){ if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; } await createUserWithEmailAndPassword(auth,email,p1); toast("✅ Registrierung erfolgreich"); }
-    else { await signInWithEmailAndPassword(auth,email,p1); toast("✅ Login erfolgreich"); }
-  }catch(err){
-    const code=err?.code||"";
-    if(code.includes("auth/unauthorized-domain")) $("#loginError").innerHTML="❗ <b>auth/unauthorized-domain</b> – добавьте домен GitHub Pages в Firebase → Authentication → Settings → Authorized domains.";
-    else if(code.includes("network-request-failed")) $("#loginError").textContent="⚠️ Netzwerkfehler. Проверьте HTTPS и интернет.";
-    else if(code.includes("user-not-found")) $("#loginError").textContent="Benutzer nicht gefunden.";
-    else if(code.includes("wrong-password")) $("#loginError").textContent="Falsches Passwort.";
-    else $("#loginError").textContent="⚠️ "+(err.message||err);
-    return;
-  }
+    if(isReg){ if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; } await createUserWithEmailAndPassword(auth,email,p1); toast("✅ Registration successful!"); }
+    else{ await signInWithEmailAndPassword(auth,email,p1); toast("✅ Login successful!"); }
+  }catch(err){ $("#loginError").textContent="⚠️ "+err.message; }
 };
-$("#logoutBtn").onclick=()=>{ guest=false; signOut(auth); };
+$("#logoutBtn").onclick=()=>signOut(auth);
+onAuthStateChanged(auth, async (user)=>{ if(user){ $("#loginModal").style.display="none"; toast("Willkommen!"); loadCats(); loadMyStats(); loadLeaderboard(); } else { $("#loginModal").style.display="flex"; } });
 
-onAuthStateChanged(auth, async (user)=>{
-  if(user){
-    $("#loginModal").style.display="none";
-    $("#sidebar").style.display="block"; // показать меню после входа
-    toast("Willkommen!");
-    loadCats(); loadMyStats(); loadLeaderboard();
-  } else if(!guest){
-    $("#loginModal").style.display="flex";
-  }
-});
-
-/* ================= Stats & Leaderboard ================= */
+// ============ Stats & Leaderboard ============
 const sess={total:0,correct:0,byCat:{}};
 function resetSess(){ sess.total=0; sess.correct=0; sess.byCat={}; }
 async function saveSession(){
-  if(guest){ // локально
-    const hist = JSON.parse(localStorage.getItem("guest-sessions")||"[]");
-    hist.push({ts:Date.now(), total:sess.total, correct:sess.correct, byCat:sess.byCat, cats:selected, examMode, officialMode, score, poolLen:pool.length});
-    localStorage.setItem("guest-sessions", JSON.stringify(hist));
-    resetSess(); loadMyStats(); loadLeaderboard(); return;
-  }
   const u=auth.currentUser; if(!u) return;
   const ts=Date.now();
-  await set(ref(db, `sessions/${u.uid}/${ts}`), {ts, total:sess.total, correct:sess.correct, byCat:sess.byCat, cats:selected, examMode, officialMode, score, poolLen:pool.length});
+  await set(ref(db, `sessions/${u.uid}/${ts}`), {ts, total:sess.total, correct:sess.correct, byCat:sess.byCat, cats:selected, examMode, score, poolLen:pool.length});
   const sref=ref(db, `stats/${u.uid}`); const snap=await get(sref);
   let agg=snap.exists()? snap.val():{total:0,correct:0,byCat:{}, last:0};
-  agg.total+=sess.total; agg.correct+=sess.correct; agg.last=ts;
+  agg.total += sess.total; agg.correct += sess.correct; agg.last = ts;
   for(const k of Object.keys(sess.byCat)){ if(!agg.byCat[k]) agg.byCat[k]={total:0,correct:0}; agg.byCat[k].total+=sess.byCat[k].total; agg.byCat[k].correct+=sess.byCat[k].correct; }
   await set(sref, agg);
-  const acc=agg.total? Math.round(100*agg.correct/agg.total):0;
-  await set(ref(db, `leaderboard/${u.uid}`), {user:u.email||u.uid, correct:agg.correct, total:agg.total, acc, last:ts});
+  const acc = agg.total? Math.round(100*agg.correct/agg.total):0;
+  await set(ref(db, `leaderboard/${u.uid}`), { user:u.email||u.uid, correct:agg.correct, total:agg.total, acc, last:ts });
   resetSess(); loadMyStats(); loadLeaderboard();
 }
 async function loadMyStats(){
-  if(guest){
-    const hist=JSON.parse(localStorage.getItem("guest-sessions")||"[]");
-    const total=hist.reduce((s,x)=>s+x.total,0), correct=hist.reduce((s,x)=>s+x.correct,0);
-    const acc=total? Math.round(100*correct/total):0;
-    $("#myStats").innerHTML=`<p><b>Правильных:</b> ${correct} / ${total} <span class="small">(${acc}%)</span></p><p class="small">Gastmodus: статистика хранится локально.</p>`;
-    return;
-  }
-  const u=auth.currentUser; if(!u){ $("#myStats").innerHTML="<p class='small'>Bitte einloggen.</p>"; return; }
+  const u=auth.currentUser; if(!u) return;
   const snap=await get(ref(db,`stats/${u.uid}`)); const el=$("#myStats");
   if(!snap.exists()){ el.innerHTML="<p class='small'>Нет данных. Сыграйте первую игру.</p>"; return; }
-  const st=snap.val(); const acc=st.total? Math.round(100*st.correct/st.total):0;
+  const st=snap.val(); const acc = st.total? Math.round(100*st.correct/st.total):0;
   const cats=Object.entries(st.byCat||{}).map(([k,v])=>`<li>${k}: ${v.correct}/${v.total}</li>`).join("");
-  el.innerHTML=`<p><b>Правильных:</b> ${st.correct} / ${st.total} <span class="small">(${acc}%)</span></p><ul>${cats}</ul><p class="small">Обновлено: ${new Date(st.last).toLocaleString()}</p>`;
+  el.innerHTML = `<p><b>Правильных:</b> ${st.correct} / ${st.total} <span class="small">(${acc}%)</span></p><ul>${cats}</ul><p class="small">Обновлено: ${new Date(st.last).toLocaleString()}</p>`;
 }
 async function loadLeaderboard(){
-  const el=$("#leaderList"); el.innerHTML="";
-  if(guest){ el.innerHTML="<p class='small'>Лидерборд доступен после входа.</p>"; return; }
-  const snap=await get(ref(db,'leaderboard'));
+  const snap=await get(ref(db,'leaderboard')); const el=$("#leaderList"); el.innerHTML="";
   if(!snap.exists()){ el.innerHTML="<p class='small'>Пока пусто.</p>"; return; }
   const items=Object.values(snap.val()); items.sort((a,b)=> b.correct-a.correct || a.last-b.last);
   const me=auth.currentUser?(auth.currentUser.email||auth.currentUser.uid):"";
-  items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.style.cssText="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px dashed var(--border);"+(it.user===me?" background:rgba(37,99,235,.08);border-radius:8px;":""); row.innerHTML=`<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
+  items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.className="item"+(it.user===me?" you":""); row.innerHTML = `<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
 }
 
-/* ================= TTS (Browser SpeechSynthesis, без ключей) ================= */
-let ttsOn=true;
-let ttsQueue=[]; let ttsPlaying=false;
-let preferredVoice=null;
-const DEFAULT_RATE = 0.5;  // медленнее по умолчанию
-const SLOW_RATE = 0.25;    // «Langsamer» (≈ в 4 раза медленнее)
-
-function pickVoice(){
-  if(!('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if(!voices || !voices.length) return null;
-  // Пытаемся найти немецкие голоса, предпочтительно AT/DE
-  const deVoices = voices.filter(v => /de(-|_|$)/i.test(v.lang) || /german/i.test(v.name));
-  // Стадия 1: de-AT, затем de-DE, затем любые de
-  let v = deVoices.find(v=>/de[-_]?AT/i.test(v.lang)) 
-       || deVoices.find(v=>/de[-_]?DE/i.test(v.lang))
-       || deVoices[0]
-       || voices[0];
-  return v || null;
-}
-
-function speak(text, rate=DEFAULT_RATE){
+// ============ TTS (ElevenLabs) ============
+let ttsOn=true; const audioEl=new Audio(); audioEl.volume=1;
+let queue=[], playing=false;
+function speak(text){
   if(!ttsOn || !text) return;
-  if(!('speechSynthesis' in window)){
-    toast("TTS nicht verfügbar (Browser).");
-    return;
+  queue.push(...text.replace(/\s+/g," ").split(/(?<=[\.\!\?])/g).map(s=>s.trim()).filter(Boolean));
+  if(!playing) nextSpeak();
+}
+async function nextSpeak(){
+  if(queue.length===0){ playing=false; return; }
+  playing=true; const part=queue.shift();
+  try{
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,{
+      method:"POST",
+      headers:{ "xi-api-key": ELEVEN_API_KEY, "Content-Type":"application/json", "Accept":"audio/mpeg" },
+      body: JSON.stringify({ text: part, model_id:"eleven_multilingual_v2", voice_settings:{ stability:0.4, similarity_boost:0.8, style:0, use_speaker_boost:true } })
+    });
+    const blob = await res.blob();
+    audioEl.src = URL.createObjectURL(blob);
+    await audioEl.play();
+    audioEl.onended = ()=> nextSpeak();
+  }catch(e){
+    console.warn("TTS error",e); playing=false;
   }
-  // Разбиваем по предложениям
-  const parts=text.replace(/\s+/g," ").split(/(?<=[\.\!\?])/g).map(s=>s.trim()).filter(Boolean);
-  ttsQueue.push(...parts.map(p=>({text:p, rate})));
-  if(!ttsPlaying) nextSpeak();
 }
+function stopSpeak(){ try{ audioEl.pause(); audioEl.currentTime=0; }catch{} queue=[]; playing=false; }
 
-function nextSpeak(){
-  if(ttsQueue.length===0){ ttsPlaying=false; return; }
-  ttsPlaying=true;
-  if(!preferredVoice) preferredVoice = pickVoice();
-  const job = ttsQueue.shift();
-  const u = new SpeechSynthesisUtterance(job.text);
-  if(preferredVoice){ u.voice = preferredVoice; u.lang = preferredVoice.lang; }
-  else { u.lang = "de-DE"; }
-  u.rate = job.rate;
-  u.onend = ()=> nextSpeak();
-  u.onerror = ()=> { console.warn("TTS error"); nextSpeak(); };
-  window.speechSynthesis.speak(u);
-}
-
-function stopSpeak(){
-  try{ if('speechSynthesis' in window){ window.speechSynthesis.cancel(); } }catch{}
-  ttsQueue=[]; ttsPlaying=false;
-}
-
-if('speechSynthesis' in window){
-  // Некоторые браузеры отдают голоса асинхронно
-  window.speechSynthesis.onvoiceschanged = ()=>{
-    preferredVoice = pickVoice();
-  };
-}
-
-$("#replayBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, DEFAULT_RATE); };
-$("#replaySlowBtn").onclick = ()=>{ stopSpeak(); speak(lastQuestionText, SLOW_RATE); };
-
-/* ================= UI ================= */
+// ============ UI Bindings ============
 function loadCats(){
   const wrap=$("#catList"); wrap.innerHTML="";
   THEMEN.forEach(t=>{
-    const have=availableCount(t.key); const need=t.official||have;
+    const count = DATA[t.key]?.length || 0;
     const div=document.createElement("label"); div.className="cat";
-    div.innerHTML=`<input type="checkbox" value="${t.key}"> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="meta">${have}/${need}</span>`;
+    div.innerHTML = `<input type="checkbox" value="${t.key}"> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="count">${count}</span>`;
     wrap.appendChild(div);
   });
-  // Включим по умолчанию ключевые
-  $$("#catList input[type=checkbox]").forEach(cb=>{ if(["regierungs","gerichte","guertel","tarif"].includes(cb.value)) cb.checked=true; });
 }
-
-// кнопки
-$("#menuBtn").onclick = ()=>{
-  const s=$("#sidebar");
-  const visible = getComputedStyle(s).display!=="none";
-  s.style.display = visible ? "none" : "block";
-};
+$("#menuBtn").onclick = ()=>{ const s=$("#sidebar"); s.style.display=(s.style.display==="block"?"none":"block"); };
 $("#startBtn").onclick = ()=>{ resetSess(); startQuiz("normal"); };
 $("#examBtn").onclick  = ()=>{ resetSess(); startQuiz("exam"); };
-$("#officialBtn").onclick = ()=>{ resetSess(); startOfficialBlock(); };
 $("#nextBtn").onclick  = nextQuestion;
 $("#againBtn").onclick = restartQuiz;
 $("#backBtn").onclick  = backToMenu;
@@ -839,80 +604,9 @@ document.addEventListener("keydown",(e)=>{
   if($("#quizPanel").style.display!=="block") return;
   const i=["1","2","3","4","5","6"].indexOf(e.key);
   if(i>=0){ const opt=$$("#optionsContainer .option")[i]; if(opt && opt.onclick) opt.click(); }
-  if(e.key==="Enter" && getComputedStyle($("#nextBtn")).display!=="none") nextQuestion();
+  if(e.key==="Enter" && $("#nextBtn").style.display==="block") nextQuestion();
 });
-
-window.addEventListener("load", ()=>{
-  toast("Bereit. Melden Sie sich an (oder Gastmodus).");
-  loadCats();
-  // Для надёжности загрузим голоса TTS
-  if('speechSynthesis' in window){
-    // Запросим голоса (хак для некоторых браузеров)
-    window.speechSynthesis.getVoices();
-    setTimeout(()=>{ preferredVoice = pickVoice(); }, 300);
-  }
-});
-</script>
-
-<!-- OCR оверлей (по желанию, положи kurs.pdf рядом с index.html и дополняй базу) -->
-<div id="ocrOverlay">
-  <div id="ocrLabel" style="font-weight:800">Подготовка…</div>
-  <div id="ocrBar"><div></div></div>
-  <div class="small">Источник: I. ORTSKUNDE (S.6–28) из kurs.pdf</div>
-</div>
-
-<script type="module">
-/* --------- OCR‑импорт из kurs.pdf (опционально) --------- */
-const OCR = {
-  pages:[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28],
-  async run(){
-    const overlay=document.getElementById('ocrOverlay'); overlay.style.display="flex";
-    const bar=overlay.querySelector('#ocrBar>div'); const label=overlay.querySelector('#ocrLabel');
-    const pack = JSON.parse(localStorage.getItem("pack-override")||JSON.stringify(JSON.parse(document.getElementById('data-pack').textContent)));
-    let pdf; try{ pdf=await pdfjsLib.getDocument('kurs.pdf').promise; }catch{ label.textContent="Не нашёл kurs.pdf (положите файл в корне)."; return; }
-    let done=0, total=OCR.pages.length;
-    for(const p of OCR.pages){
-      label.textContent=`Чтение страницы ${p}…`; 
-      const page=await pdf.getPage(p);
-      const viewport=page.getViewport({scale:2});
-      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-      canvas.width=viewport.width; canvas.height=viewport.height;
-      await page.render({canvasContext:ctx, viewport}).promise;
-      label.textContent=`OCR ${p}…`; 
-      const result=await Tesseract.recognize(canvas, 'deu+eng', { logger:m=>{ if(m.progress) bar.style.width=(100*(done/total + m.progress/total))+"%"; }});
-      let lines=result.data.text.replace(/\r/g,"").split('\n').map(s=>s.trim()).filter(Boolean);
-      function pushPair(dst,name,addr){ if(!name||!addr) return; pack[dst]=pack[dst]||[]; if(!pack[dst].some(x=>x.name===name)){ pack[dst].push({name, address:addr}); } }
-      function parsePairs(dst, lines){
-        lines.forEach(line=>{
-          const m=line.match(/(.+?)\s{2,}(.+?(straße|gasse|platz|ring|kai|markt|allee|lände|ufer|Objekt|Tor)\s*[\w\s\-\./]*\d*.*)$/i);
-          if(m){ pushPair(dst, m[1].replace(/\s{2,}/g,' ').trim(), m[2].trim()); }
-        });
-      }
-      const pageTxt = lines.join(' ');
-      if(/REGIERUNGSGEBÄUDE|Ministerien/i.test(pageTxt)) parsePairs('regierungs', lines);
-      if(/GERICHTSGEBÄUDE/i.test(pageTxt))             parsePairs('gerichte', lines);
-      if(/BUNDESPOLIZEIDIREKTION/i.test(pageTxt))      parsePairs('bundespolizei', lines);
-      if(/STADTPOLIZEIKOMMANDEN|POLIZEIINSPEKTIONEN/i.test(pageTxt)) parsePairs('stadtpolizei', lines);
-      if(/MAGISTRATISCHE BEZIRKSÄMTER|AMTSHÄUSER/i.test(pageTxt))    parsePairs('bezirksaemter', lines);
-      if(/BEHERBERGUNGSBETRIEBE/i.test(pageTxt))       parsePairs('hotels', lines);
-      if(/KAFFEEHÄUSER|KAFFEEHAEUSER/i.test(pageTxt))  parsePairs('cafes', lines);
-      if(/FRIEDHÖFE|FRIEDHOEFE/i.test(pageTxt))        parsePairs('friedhoefe', lines);
-      if(/KRANKENANSTALTEN/i.test(pageTxt))            parsePairs('kranken', lines);
-      if(/PENSIONISTENWOHNHEIME/i.test(pageTxt))       parsePairs('pension', lines);
-      if(/KULTURINSTITUTE|BÜHNЕНHÄUSER|BUEHNENHAEUSER/i.test(pageTxt)) parsePairs('kultur', lines);
-      if(/KABARETTS|VOLKSBÜHNEN|VOLKSBUEHNEN/i.test(pageTxt)) parsePairs('kabarett', lines);
-      if(/UNIVERSITÄTEN|BILDUNGSANSTALTEN|UNIVERSITAETEN/i.test(pageTxt)) parsePairs('unis', lines);
-      if(/MUSEEN/i.test(pageTxt))                      parsePairs('museen', lines);
-      if(/BAUTEN|SEHENSWÜRDIGKEITEN/i.test(pageTxt))   parsePairs('bauten', lines);
-      done++; bar.style.width=(100*done/total)+"%";
-    }
-    localStorage.setItem("pack-override", JSON.stringify(pack));
-    overlay.style.display="none";
-    toast("Импорт завершён. Перезагрузите страницу (Ctrl+R).");
-  }
-};
-// При желании можно повесить на отдельную кнопку:
-// document.querySelector('#importBtn')?.addEventListener('click', ()=>OCR.run());
+window.addEventListener("load", ()=>{ toast("Bereit. Melden Sie sich an."); loadCats(); });
 </script>
 </body>
-</html>
+</html
