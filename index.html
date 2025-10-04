@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Венский Такси Ассистент для Экзамена</title>
+    <title>Wiener Taxi Prüfungsassistent</title>
     <style>
         * {
             margin: 0;
@@ -20,13 +20,12 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background-color: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-            position: relative;
         }
         
         header {
@@ -54,11 +53,28 @@
             gap: 20px;
         }
         
+        .content-row {
+            display: flex;
+            gap: 20px;
+        }
+        
         .menu-section {
             background-color: #f8f9fa;
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+        
+        .map-section {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
         h2 {
@@ -70,8 +86,8 @@
         
         .topics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
             margin-top: 15px;
         }
         
@@ -79,10 +95,11 @@
             background: white;
             border: 1px solid #ddd;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
+            font-size: 14px;
         }
         
         .topic-item:hover {
@@ -144,6 +161,32 @@
             font-weight: bold;
         }
         
+        .map-container {
+            width: 100%;
+            height: 300px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #6c8bce, #9bb1e8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+        
         .history-section {
             background-color: #f8f9fa;
             border-radius: 10px;
@@ -169,25 +212,6 @@
         
         .incorrect {
             background-color: #dc3545;
-        }
-        
-        .menu-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #1a2a6c;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            z-index: 100;
         }
         
         .question-screen {
@@ -294,28 +318,6 @@
             transform: translateY(-2px);
         }
         
-        .topic-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: #fdbb2d;
-            color: #1a2a6c;
-            border: none;
-            border-radius: 50px;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            z-index: 100;
-        }
-        
-        .topic-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-        }
-        
         .result-screen {
             display: none;
             padding: 30px;
@@ -348,7 +350,33 @@
             margin-top: 20px;
         }
         
+        .voice-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .voice-btn {
+            background: #fdbb2d;
+            color: #1a2a6c;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-btn:hover {
+            background: #e6a920;
+        }
+        
         @media (max-width: 768px) {
+            .content-row {
+                flex-direction: column;
+            }
+            
             .topics-grid {
                 grid-template-columns: 1fr;
             }
@@ -361,50 +389,54 @@
                 padding: 12px 25px;
                 font-size: 16px;
             }
-            
-            .topic-btn {
-                top: 80px;
-                left: 20px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <button class="topic-btn" id="topicBtn">Темы</button>
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        
         <header>
-            <h1>Венский Такси Ассистент для Экзамена</h1>
-            <div class="subtitle">Подготовка к Венскому такси экзамену</div>
+            <h1>Wiener Taxi Prüfungsassistent</h1>
+            <div class="subtitle">Vorbereitung auf die Wiener Taxiprüfung</div>
         </header>
         
         <div class="main-content" id="mainScreen">
-            <div class="menu-section">
-                <h2>Языковой экзамен - Темы</h2>
-                <div class="topics-grid">
-                    <div class="topic-item" data-topic="government">I.1) Правительственные здания</div>
-                    <div class="topic-item" data-topic="courts">I.2) Судебные здания</div>
-                    <div class="topic-item" data-topic="police">I.3) Федеральная полиция</div>
-                    <div class="topic-item" data-topic="police-stations">I.4) Городские полицейские участки</div>
-                    <div class="topic-item" data-topic="gurtel">I.19) Пересечения на Гюртеле</div>
-                    <div class="topic-item" data-topic="regulations">II) Регламент работы</div>
-                    <div class="topic-item" data-topic="tariff">III) Венский тариф</div>
-                    <div class="topic-item" data-topic="traffic">IV) Правила дорожного движения</div>
-                    <div class="topic-item" data-topic="general">Общие правила дорожного движения</div>
-                    <div class="topic-item" data-topic="sights">Достопримечательности Вены</div>
-                    <div class="topic-item" data-topic="safety">Правила безопасности</div>
-                    <div class="topic-item" data-topic="service">Обслуживание клиентов</div>
+            <div class="content-row">
+                <div class="menu-section">
+                    <h2>Sprachprüfung - Themen</h2>
+                    <div class="topics-grid">
+                        <div class="topic-item">I.1) Regierungsgebäude (S.6)</div>
+                        <div class="topic-item">I.2) Gerichtsgebäude (S.6-7)</div>
+                        <div class="topic-item">I.3) Bundespolizei (S.7)</div>
+                        <div class="topic-item">I.4) Stadtpolizeikommanden (S.7-10)</div>
+                        <div class="topic-item">I.19) Gürtel Kreuzungen (S.23)</div>
+                        <div class="topic-item">II) Betriebsordnung (S.39-56)</div>
+                        <div class="topic-item">III) Wiener Tarif (S.58-61)</div>
+                        <div class="topic-item">IV) Straßenverkehrsordnung (S.62-75)</div>
+                    </div>
+                </div>
+                
+                <div class="map-section">
+                    <h2>Wien Karte</h2>
+                    <div class="map-container">
+                        <div class="map-placeholder">
+                            Karte von Wien<br>
+                            mit wichtigen Sehenswürdigkeiten
+                        </div>
+                    </div>
+                    <div class="voice-controls">
+                        <button class="voice-btn" id="playQuestion">Frage vorlesen</button>
+                        <button class="voice-btn" id="repeatQuestion">Wiederholen</button>
+                    </div>
                 </div>
             </div>
             
             <div class="exam-section">
-                <h2>Экзаменационный режим</h2>
-                <p>10 вопросов в официальном стиле</p>
-                <button class="exam-btn" id="startExam">Начать официальный блок</button>
+                <h2>Prüfungsmodus</h2>
+                <p>10 Fragen im amtlichen Stil</p>
+                <button class="exam-btn" id="startExam">Amtlicher Block starten</button>
                 
                 <div class="instructions">
-                    <p><strong>Управление с клавиатуры:</strong></p>
+                    <p><strong>Tastatursteuerung:</strong></p>
                     <div class="keyboard-hint">
                         <div class="key">1</div>
                         <div class="key">2</div>
@@ -414,15 +446,15 @@
                         <div class="key">6</div>
                         <div class="key">↵</div>
                     </div>
-                    <p>Цифры 1-6 для выбора ответа, Enter = Далее</p>
+                    <p>Zahlen 1-6 für Antwortauswahl, Enter = Weiter</p>
                 </div>
             </div>
             
             <div class="history-section">
-                <h2>История ответов</h2>
-                <p>Ваши последние ответы:</p>
+                <h2>Antwortverlauf</h2>
+                <p>Ihre letzten Antworten:</p>
                 <div class="history-items" id="historyItems">
-                    <!-- Маркеры истории будут добавляться здесь динамически -->
+                    <!-- History markers will be added here dynamically -->
                 </div>
             </div>
         </div>
@@ -434,256 +466,180 @@
             <div class="question-text" id="questionText"></div>
             
             <div class="image-container" id="imageContainer">
-                <!-- Изображения будут вставляться здесь для вопросов о тарифах -->
+                <!-- Images will be inserted here for tariff questions -->
             </div>
             
             <div class="answers-container" id="answersContainer">
-                <!-- Кнопки ответов будут вставляться здесь динамически -->
+                <!-- Answer buttons will be inserted here dynamically -->
             </div>
             
             <div class="feedback correct-feedback" id="correctFeedback">
-                ✓ Правильно!
+                ✓ Richtig!
             </div>
             
             <div class="feedback incorrect-feedback" id="incorrectFeedback">
-                ✗ Неправильно! Правильный ответ: <span id="correctAnswer"></span>
+                ✗ Falsch! Die richtige Antwort ist: <span id="correctAnswer"></span>
             </div>
             
-            <button class="next-btn" id="nextQuestion">Далее (Enter)</button>
+            <button class="next-btn" id="nextQuestion">Weiter (Enter)</button>
         </div>
         
         <div class="result-screen" id="resultScreen">
-            <h2 class="result-title">Результаты экзамена</h2>
+            <h2 class="result-title">Prüfungsergebnis</h2>
             <div class="result-score" id="finalScore"></div>
             <p id="resultMessage"></p>
-            <button class="restart-btn" id="restartBtn">Начать заново</button>
+            <button class="restart-btn" id="restartBtn">Neustart</button>
         </div>
     </div>
 
     <script>
         // База данных вопросов
-        const questionsData = {
-            "government": [
-                {
-                    question: "Какое из следующих зданий находится на Ринге в Вене?",
-                    answers: [
-                        "Венская ратуша",
-                        "Дворец Шёнбрунн",
-                        "Дунайская башня",
-                        "Дом Хундертвассера",
-                        "Центральное кладбище",
-                        "UNO-City"
-                    ],
-                    correct: 0,
-                    topic: "I.1) Правительственные здания",
-                    hasImage: false
-                }
-            ],
-            "courts": [
-                {
-                    question: "Где находится Верховный суд Австрии?",
-                    answers: [
-                        "Фрайунг 6, 1010 Вена",
-                        "Шмерлингплац 1, 1010 Вена",
-                        "Йозефсплац 1, 1010 Вена",
-                        "Ферстельгассе 1, 1010 Вена",
-                        "Ландштрассе 12, 1030 Вена",
-                        "Фаворитенштрассе 15, 1040 Вена"
-                    ],
-                    correct: 2,
-                    topic: "I.2) Судебные здания",
-                    hasImage: false
-                }
-            ],
-            "police": [
-                {
-                    question: "Какая служба отвечает за дорожный надзор в Вене?",
-                    answers: [
-                        "Магистрат 46",
-                        "Федеральная полиция Вены",
-                        "Полиция земли Вена",
-                        "Магистрат 68",
-                        "Венские линии",
-                        "Магистрат 33"
-                    ],
-                    correct: 2,
-                    topic: "I.3) Федеральная полиция",
-                    hasImage: false
-                }
-            ],
-            "police-stations": [
-                {
-                    question: "Сколько полицейских участков в Вене?",
-                    answers: [
-                        "14",
-                        "16",
-                        "18",
-                        "20",
-                        "22",
-                        "24"
-                    ],
-                    correct: 1,
-                    topic: "I.4) Городские полицейские участки",
-                    hasImage: false
-                }
-            ],
-            "gurtel": [
-                {
-                    question: "Какое пересечение на Гюртеле известно своей сложной организацией движения?",
-                    answers: [
-                        "Вестгюртель / Мариахильфер Гюртель",
-                        "Лерхенфельдер Гюртель / Хернальсер Гюртель",
-                        "Верингер Гюртель / Дёблингер Гюртель",
-                        "Маргаретенгюртель / Виднер Гюртель",
-                        "Все перечисленные",
-                        "Ни один из перечисленных"
-                    ],
-                    correct: 4,
-                    topic: "I.19) Пересечения на Гюртеле",
-                    hasImage: false
-                }
-            ],
-            "regulations": [
-                {
-                    question: "В какое время таксист обязан иметь при себе лицензию?",
-                    answers: [
-                        "Только во время работы",
-                        "Всегда во время службы",
-                        "Только при проверке",
-                        "В рабочее время",
-                        "24 часа в сутки",
-                        "Только при перевозке пассажиров"
-                    ],
-                    correct: 1,
-                    topic: "II) Регламент работы",
-                    hasImage: false
-                }
-            ],
-            "tariff": [
-                {
-                    question: "Какова начальная плата за поездку на такси в Вене?",
-                    answers: [
-                        "€ 3,80",
-                        "€ 4,20",
-                        "€ 5,00",
-                        "€ 2,50",
-                        "€ 3,00",
-                        "€ 4,80"
-                    ],
-                    correct: 0,
-                    topic: "III) Венский тариф",
-                    hasImage: true
-                },
-                {
-                    question: "Сколько стоит километр по тарифу 2 в Вене?",
-                    answers: [
-                        "€ 1,80",
-                        "€ 2,10",
-                        "€ 1,50",
-                        "€ 2,50",
-                        "€ 1,30",
-                        "€ 1,95"
-                    ],
-                    correct: 0,
-                    topic: "III) Венский тариф",
-                    hasImage: true
-                }
-            ],
-            "traffic": [
-                {
-                    question: "Какое ограничение скорости в жилых зонах Вены?",
-                    answers: [
-                        "20 км/ч",
-                        "30 км/ч",
-                        "50 км/ч",
-                        "60 км/ч",
-                        "70 км/ч",
-                        "Нет ограничения"
-                    ],
-                    correct: 1,
-                    topic: "IV) Правила дорожного движения",
-                    hasImage: false
-                }
-            ],
-            "general": [
-                {
-                    question: "Сколько человек можно перевозить в венском такси максимум?",
-                    answers: [
-                        "4 человека",
-                        "5 человек",
-                        "6 человек",
-                        "7 человек",
-                        "8 человек",
-                        "Неограниченно"
-                    ],
-                    correct: 0,
-                    topic: "Общие правила дорожного движения",
-                    hasImage: false
-                }
-            ],
-            "sights": [
-                {
-                    question: "Какая достопримечательность НЕ находится в центре Вены?",
-                    answers: [
-                        "Собор Святого Стефана",
-                        "Хофбург",
-                        "Бельведер",
-                        "Венская опера",
-                        "Парламент",
-                        "Музей истории искусств"
-                    ],
-                    correct: 2,
-                    topic: "Достопримечательности Вены",
-                    hasImage: false
-                }
-            ],
-            "safety": [
-                {
-                    question: "Что должен проверить таксист перед началом смены?",
-                    answers: [
-                        "Тормоза, огни, шины",
-                        "Уровень топлива",
-                        "Чистоту салона",
-                        "Радиостанцию",
-                        "Все перечисленные",
-                        "Только A и B"
-                    ],
-                    correct: 4,
-                    topic: "Правила безопасности",
-                    hasImage: false
-                }
-            ],
-            "service": [
-                {
-                    question: "Что должен сделать таксист при посадке пассажира?",
-                    answers: [
-                        "Включить счетчик",
-                        "Предложить воду",
-                        "Рассказать о достопримечательностях",
-                        "Спросить о музыке",
-                        "Все перечисленные",
-                        "Только A и B"
-                    ],
-                    correct: 0,
-                    topic: "Обслуживание клиентов",
-                    hasImage: false
-                }
-            ]
-        };
-
-        // Получить все вопросы из всех категорий
-        function getAllQuestions() {
-            let allQuestions = [];
-            for (const category in questionsData) {
-                allQuestions = allQuestions.concat(questionsData[category]);
+        const questionsData = [
+            {
+                question: "Welche der folgenden Gebäude befindet sich am Ring in Wien?",
+                answers: [
+                    "Wiener Rathaus",
+                    "Schloss Schönbrunn",
+                    "Donauturm",
+                    "Hundertwasserhaus",
+                    "Zentralfriedhof",
+                    "UNO-City"
+                ],
+                correct: 0,
+                topic: "I.1) Regierungsgebäude",
+                hasImage: false
+            },
+            {
+                question: "Wie hoch ist der Grundtarif für eine Taxifahrt in Wien?",
+                answers: [
+                    "€ 3,80",
+                    "€ 4,20",
+                    "€ 5,00",
+                    "€ 2,50",
+                    "€ 3,00",
+                    "€ 4,80"
+                ],
+                correct: 0,
+                topic: "III) Wiener Tarif",
+                hasImage: true
+            },
+            {
+                question: "Welche Kreuzung am Gürtel ist bekannt für ihre komplexe Verkehrsführung?",
+                answers: [
+                    "Westgürtel / Mariahilfer Gürtel",
+                    "Lerchenfelder Gürtel / Hernalser Gürtel",
+                    "Währinger Gürtel / Döblinger Gürtel",
+                    "Margaretengürtel / Wiedner Gürtel",
+                    "Alle genannten",
+                    "Keine der genannten"
+                ],
+                correct: 4,
+                topic: "I.19) Gürtel Kreuzungen",
+                hasImage: false
+            },
+            {
+                question: "Was ist die Höchstgeschwindigkeit in Wiener Wohnstraßen?",
+                answers: [
+                    "20 km/h",
+                    "30 km/h",
+                    "50 km/h",
+                    "60 km/h",
+                    "70 km/h",
+                    "Es gibt keine Begrenzung"
+                ],
+                correct: 1,
+                topic: "IV) Straßenverkehrsordnung",
+                hasImage: false
+            },
+            {
+                question: "Welche Dienststelle ist für Verkehrsüberwachung in Wien zuständig?",
+                answers: [
+                    "Magistratsabteilung 46",
+                    "Bundespolizeidirektion Wien",
+                    "Landespolizeidirektion Wien",
+                    "Magistratsabteilung 68",
+                    "Wiener Linien",
+                    "Magistratsabteilung 33"
+                ],
+                correct: 2,
+                topic: "I.4) Stadtpolizeikommanden",
+                hasImage: false
+            },
+            {
+                question: "Wie viele Personen dürfen maximal in einem Wiener Taxi befördert werden?",
+                answers: [
+                    "4 Personen",
+                    "5 Personen",
+                    "6 Personen",
+                    "7 Personen",
+                    "8 Personen",
+                    "Unbegrenzt"
+                ],
+                correct: 0,
+                topic: "II) Betriebsordnung",
+                hasImage: false
+            },
+            {
+                question: "Wo befindet sich das Bundeskanzleramt in Wien?",
+                answers: [
+                    "Ballhausplatz 2, 1010 Wien",
+                    "Herrengasse 23, 1010 Wien",
+                    "Minoritenplatz 3, 1010 Wien",
+                    "Josefsplatz 1, 1010 Wien",
+                    "Schmerlingplatz 1, 1010 Wien",
+                    "Dr.-Karl-Renner-Ring 3, 1010 Wien"
+                ],
+                correct: 0,
+                topic: "I.1) Regierungsgebäude",
+                hasImage: false
+            },
+            {
+                question: "Was bedeutet das Verkehrszeichen 'Begegnungszone'?",
+                answers: [
+                    "Fußgänger haben Vorrang",
+                    "Maximal 20 km/h",
+                    "Spielende Kinder auf der Fahrbahn",
+                    "Parken nur mit Bewohnerparkausweis",
+                    "Radfahrer frei",
+                    "Einfahrt verboten"
+                ],
+                correct: 0,
+                topic: "IV) Straßenverkehrsordnung",
+                hasImage: false
+            },
+            {
+                question: "Wie viel kostet der Kilometer nach Tarif 2 in Wien?",
+                answers: [
+                    "€ 1,80",
+                    "€ 2,10",
+                    "€ 1,50",
+                    "€ 2,50",
+                    "€ 1,30",
+                    "€ 1,95"
+                ],
+                correct: 0,
+                topic: "III) Wiener Tarif",
+                hasImage: true
+            },
+            {
+                question: "Welche Farbe haben Wiener Taxis?",
+                answers: [
+                    "Schwarz-Gelb",
+                    "Weiß",
+                    "Grün-Weiß",
+                    "Rot-Weiß",
+                    "Blau",
+                    "Grau"
+                ],
+                correct: 0,
+                topic: "II) Betriebsordnung",
+                hasImage: false
             }
-            return allQuestions;
-        }
+        ];
 
         // Получить случайные вопросы
         function getRandomQuestions(count) {
-            const allQuestions = getAllQuestions();
-            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+            const shuffled = [...questionsData].sort(() => 0.5 - Math.random());
             return shuffled.slice(0, count);
         }
 
@@ -695,7 +651,8 @@
             const resultScreen = document.getElementById('resultScreen');
             const startExamBtn = document.getElementById('startExam');
             const restartBtn = document.getElementById('restartBtn');
-            const topicBtn = document.getElementById('topicBtn');
+            const playQuestionBtn = document.getElementById('playQuestion');
+            const repeatQuestionBtn = document.getElementById('repeatQuestion');
             const questionText = document.getElementById('questionText');
             const answersContainer = document.getElementById('answersContainer');
             const nextQuestionBtn = document.getElementById('nextQuestion');
@@ -713,12 +670,14 @@
             let score = 0;
             let answerHistory = [];
             let currentQuestions = [];
+            let currentQuestion = null;
             
             // Инициализация
             startExamBtn.addEventListener('click', startExam);
             restartBtn.addEventListener('click', restartExam);
             nextQuestionBtn.addEventListener('click', nextQuestion);
-            topicBtn.addEventListener('click', showTopics);
+            playQuestionBtn.addEventListener('click', playQuestion);
+            repeatQuestionBtn.addEventListener('click', playQuestion);
             
             // Управление с клавиатуры
             document.addEventListener('keydown', function(e) {
@@ -753,11 +712,11 @@
                     return;
                 }
                 
-                const question = currentQuestions[currentQuestionIndex];
-                questionText.textContent = question.question;
+                currentQuestion = currentQuestions[currentQuestionIndex];
+                questionText.textContent = currentQuestion.question;
                 
                 answersContainer.innerHTML = '';
-                question.answers.forEach((answer, index) => {
+                currentQuestion.answers.forEach((answer, index) => {
                     const button = document.createElement('button');
                     button.className = 'answer-btn';
                     button.textContent = `${index + 1}. ${answer}`;
@@ -768,10 +727,10 @@
                 // Обработка изображения
                 imageContainer.style.display = 'none';
                 imageContainer.innerHTML = '';
-                if (question.hasImage) {
+                if (currentQuestion.hasImage) {
                     const img = document.createElement('img');
-                    img.src = 'https://via.placeholder.com/600x300/1a2a6c/ffffff?text=Тарифная+таблица';
-                    img.alt = 'Иллюстрация к вопросу';
+                    img.src = 'https://via.placeholder.com/600x300/1a2a6c/ffffff?text=Wiener+Taxitarif';
+                    img.alt = 'Wiener Taxitarif Tabelle';
                     imageContainer.appendChild(img);
                     imageContainer.style.display = 'block';
                 }
@@ -782,17 +741,43 @@
                 
                 const progress = ((currentQuestionIndex) / currentQuestions.length) * 100;
                 progressBar.style.width = `${progress}%`;
+                
+                // Автоматическое озвучивание вопроса
+                playQuestion();
+            }
+            
+            function playQuestion() {
+                if (!currentQuestion) return;
+                
+                // Используем SpeechSynthesis API для озвучивания
+                if ('speechSynthesis' in window) {
+                    const speech = new SpeechSynthesisUtterance();
+                    speech.text = currentQuestion.question;
+                    speech.lang = 'de-DE';
+                    speech.rate = 0.9;
+                    speech.pitch = 1.0;
+                    
+                    // Мужской голос (если доступен)
+                    const voices = speechSynthesis.getVoices();
+                    const maleVoice = voices.find(voice => 
+                        voice.lang === 'de-DE' && voice.name.includes('Male'));
+                    
+                    if (maleVoice) {
+                        speech.voice = maleVoice;
+                    }
+                    
+                    speechSynthesis.speak(speech);
+                }
             }
             
             function checkAnswer(selectedIndex) {
-                const question = currentQuestions[currentQuestionIndex];
-                const isCorrect = selectedIndex === question.correct;
+                const isCorrect = selectedIndex === currentQuestion.correct;
                 
                 // Отключить кнопки
                 const buttons = answersContainer.querySelectorAll('.answer-btn');
                 buttons.forEach((btn, index) => {
                     btn.style.pointerEvents = 'none';
-                    if (index === question.correct) {
+                    if (index === currentQuestion.correct) {
                         btn.style.borderColor = '#28a745';
                         btn.style.backgroundColor = '#d4edda';
                     } else if (index === selectedIndex && !isCorrect) {
@@ -807,7 +792,7 @@
                     answerHistory.push('correct');
                 } else {
                     incorrectFeedback.style.display = 'block';
-                    correctAnswerSpan.textContent = question.answers[question.correct];
+                    correctAnswerSpan.textContent = currentQuestion.answers[currentQuestion.correct];
                     answerHistory.push('incorrect');
                 }
                 
@@ -828,21 +813,17 @@
                 
                 const percentage = (score / currentQuestions.length) * 100;
                 if (percentage >= 80) {
-                    resultMessage.textContent = "Отличный результат! Вы готовы к экзамену!";
+                    resultMessage.textContent = "Ausgezeichnet! Sie sind bereit für die Prüfung!";
                 } else if (percentage >= 60) {
-                    resultMessage.textContent = "Хороший результат, но нужно еще немного практики.";
+                    resultMessage.textContent = "Gut, aber Sie sollten noch etwas üben.";
                 } else {
-                    resultMessage.textContent = "Вам нужно больше практиковаться перед экзаменом.";
+                    resultMessage.textContent = "Sie benötigen mehr Übung vor der Prüfung.";
                 }
             }
             
             function restartExam() {
                 resultScreen.style.display = 'none';
                 mainScreen.style.display = 'flex';
-            }
-            
-            function showTopics() {
-                alert("Выберите тему из списка для изучения конкретных вопросов");
             }
             
             function updateHistory() {
