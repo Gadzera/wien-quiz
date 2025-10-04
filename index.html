@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -231,6 +231,7 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none;
         }
         
         .image-container img {
@@ -285,6 +286,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 10px;
+            display: none;
         }
         
         .next-btn:hover {
@@ -312,6 +314,38 @@
         .topic-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-screen {
+            display: none;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .result-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #1a2a6c;
+        }
+        
+        .result-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: #b21f1f;
+            margin: 20px 0;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(to right, #1a2a6c, #b21f1f);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
         }
         
         @media (max-width: 768px) {
@@ -349,18 +383,18 @@
             <div class="menu-section">
                 <h2>Языковой экзамен - Темы</h2>
                 <div class="topics-grid">
-                    <div class="topic-item">I.1) Правительственные здания (С.6)</div>
-                    <div class="topic-item">I.2) Судебные здания (С.6-7)</div>
-                    <div class="topic-item">I.3) Федеральная полиция (С.7)</div>
-                    <div class="topic-item">I.4) Городские полицейские участки (С.7-10)</div>
-                    <div class="topic-item">I.19) Пересечения на Гюртеле (С.23)</div>
-                    <div class="topic-item">II) Регламент работы (С.39-56)</div>
-                    <div class="topic-item">III) Венский тариф (С.58-61)</div>
-                    <div class="topic-item">IV) Правила дорожного движения (С.62-75)</div>
-                    <div class="topic-item">Общие правила дорожного движения</div>
-                    <div class="topic-item">Достопримечательности Вены</div>
-                    <div class="topic-item">Правила безопасности</div>
-                    <div class="topic-item">Обслуживание клиентов</div>
+                    <div class="topic-item" data-topic="government">I.1) Правительственные здания</div>
+                    <div class="topic-item" data-topic="courts">I.2) Судебные здания</div>
+                    <div class="topic-item" data-topic="police">I.3) Федеральная полиция</div>
+                    <div class="topic-item" data-topic="police-stations">I.4) Городские полицейские участки</div>
+                    <div class="topic-item" data-topic="gurtel">I.19) Пересечения на Гюртеле</div>
+                    <div class="topic-item" data-topic="regulations">II) Регламент работы</div>
+                    <div class="topic-item" data-topic="tariff">III) Венский тариф</div>
+                    <div class="topic-item" data-topic="traffic">IV) Правила дорожного движения</div>
+                    <div class="topic-item" data-topic="general">Общие правила дорожного движения</div>
+                    <div class="topic-item" data-topic="sights">Достопримечательности Вены</div>
+                    <div class="topic-item" data-topic="safety">Правила безопасности</div>
+                    <div class="topic-item" data-topic="service">Обслуживание клиентов</div>
                 </div>
             </div>
             
@@ -417,10 +451,17 @@
             
             <button class="next-btn" id="nextQuestion">Далее (Enter)</button>
         </div>
+        
+        <div class="result-screen" id="resultScreen">
+            <h2 class="result-title">Результаты экзамена</h2>
+            <div class="result-score" id="finalScore"></div>
+            <p id="resultMessage"></p>
+            <button class="restart-btn" id="restartBtn">Начать заново</button>
+        </div>
     </div>
 
     <script>
-        // База данных вопросов - можно редактировать без изменения кода
+        // База данных вопросов
         const questionsData = {
             "government": [
                 {
@@ -432,20 +473,6 @@
                         "Дом Хундертвассера",
                         "Центральное кладбище",
                         "UNO-City"
-                    ],
-                    correct: 0,
-                    topic: "I.1) Правительственные здания",
-                    hasImage: false
-                },
-                {
-                    question: "Где находится Федеральное министерство финансов Австрии?",
-                    answers: [
-                        "Йоханнесгассе 5, 1010 Вена",
-                        "Херренгассе 23, 1010 Вена",
-                        "Баллгассе 2, 1010 Вена",
-                        "Миноритенплац 3, 1010 Вена",
-                        "Штубенринг 1, 1010 Вена",
-                        "Доктор-Карл-Реннер-Ринг 3, 1010 Вена"
                     ],
                     correct: 0,
                     topic: "I.1) Правительственные здания",
@@ -484,6 +511,54 @@
                     hasImage: false
                 }
             ],
+            "police-stations": [
+                {
+                    question: "Сколько полицейских участков в Вене?",
+                    answers: [
+                        "14",
+                        "16",
+                        "18",
+                        "20",
+                        "22",
+                        "24"
+                    ],
+                    correct: 1,
+                    topic: "I.4) Городские полицейские участки",
+                    hasImage: false
+                }
+            ],
+            "gurtel": [
+                {
+                    question: "Какое пересечение на Гюртеле известно своей сложной организацией движения?",
+                    answers: [
+                        "Вестгюртель / Мариахильфер Гюртель",
+                        "Лерхенфельдер Гюртель / Хернальсер Гюртель",
+                        "Верингер Гюртель / Дёблингер Гюртель",
+                        "Маргаретенгюртель / Виднер Гюртель",
+                        "Все перечисленные",
+                        "Ни один из перечисленных"
+                    ],
+                    correct: 4,
+                    topic: "I.19) Пересечения на Гюртеле",
+                    hasImage: false
+                }
+            ],
+            "regulations": [
+                {
+                    question: "В какое время таксист обязан иметь при себе лицензию?",
+                    answers: [
+                        "Только во время работы",
+                        "Всегда во время службы",
+                        "Только при проверке",
+                        "В рабочее время",
+                        "24 часа в сутки",
+                        "Только при перевозке пассажиров"
+                    ],
+                    correct: 1,
+                    topic: "II) Регламент работы",
+                    hasImage: false
+                }
+            ],
             "tariff": [
                 {
                     question: "Какова начальная плата за поездку на такси в Вене?",
@@ -497,8 +572,7 @@
                     ],
                     correct: 0,
                     topic: "III) Венский тариф",
-                    hasImage: true,
-                    imageAlt: "Таблица венских такси тарифов"
+                    hasImage: true
                 },
                 {
                     question: "Сколько стоит километр по тарифу 2 в Вене?",
@@ -512,8 +586,7 @@
                     ],
                     correct: 0,
                     topic: "III) Венский тариф",
-                    hasImage: true,
-                    imageAlt: "Таблица венских такси тарифов"
+                    hasImage: true
                 }
             ],
             "traffic": [
@@ -529,20 +602,6 @@
                     ],
                     correct: 1,
                     topic: "IV) Правила дорожного движения",
-                    hasImage: false
-                },
-                {
-                    question: "Какое пересечение на Гюртеле известно своей сложной организацией движения?",
-                    answers: [
-                        "Вестгюртель / Мариахильфер Гюртель",
-                        "Лерхенфельдер Гюртель / Хернальсер Гюртель",
-                        "Верингер Гюртель / Дёблингер Гюртель",
-                        "Маргаретенгюртель / Виднер Гюртель",
-                        "Все перечисленные",
-                        "Ни один из перечисленных"
-                    ],
-                    correct: 4,
-                    topic: "I.19) Пересечения на Гюртеле",
                     hasImage: false
                 }
             ],
@@ -560,7 +619,41 @@
                     correct: 0,
                     topic: "Общие правила дорожного движения",
                     hasImage: false
-                },
+                }
+            ],
+            "sights": [
+                {
+                    question: "Какая достопримечательность НЕ находится в центре Вены?",
+                    answers: [
+                        "Собор Святого Стефана",
+                        "Хофбург",
+                        "Бельведер",
+                        "Венская опера",
+                        "Парламент",
+                        "Музей истории искусств"
+                    ],
+                    correct: 2,
+                    topic: "Достопримечательности Вены",
+                    hasImage: false
+                }
+            ],
+            "safety": [
+                {
+                    question: "Что должен проверить таксист перед началом смены?",
+                    answers: [
+                        "Тормоза, огни, шины",
+                        "Уровень топлива",
+                        "Чистоту салона",
+                        "Радиостанцию",
+                        "Все перечисленные",
+                        "Только A и B"
+                    ],
+                    correct: 4,
+                    topic: "Правила безопасности",
+                    hasImage: false
+                }
+            ],
+            "service": [
                 {
                     question: "Что должен сделать таксист при посадке пассажира?",
                     answers: [
@@ -578,7 +671,7 @@
             ]
         };
 
-        // Служебные функции для работы с вопросами
+        // Получить все вопросы из всех категорий
         function getAllQuestions() {
             let allQuestions = [];
             for (const category in questionsData) {
@@ -587,18 +680,21 @@
             return allQuestions;
         }
 
+        // Получить случайные вопросы
         function getRandomQuestions(count) {
             const allQuestions = getAllQuestions();
-            const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
             return shuffled.slice(0, count);
         }
 
+        // Основной код приложения
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы UI
             const mainScreen = document.getElementById('mainScreen');
             const questionScreen = document.getElementById('questionScreen');
+            const resultScreen = document.getElementById('resultScreen');
             const startExamBtn = document.getElementById('startExam');
-            const menuToggle = document.getElementById('menuToggle');
+            const restartBtn = document.getElementById('restartBtn');
             const topicBtn = document.getElementById('topicBtn');
             const questionText = document.getElementById('questionText');
             const answersContainer = document.getElementById('answersContainer');
@@ -609,6 +705,8 @@
             const correctAnswerSpan = document.getElementById('correctAnswer');
             const imageContainer = document.getElementById('imageContainer');
             const historyItems = document.getElementById('historyItems');
+            const finalScore = document.getElementById('finalScore');
+            const resultMessage = document.getElementById('resultMessage');
             
             // Состояние экзамена
             let currentQuestionIndex = 0;
@@ -616,35 +714,20 @@
             let answerHistory = [];
             let currentQuestions = [];
             
-            // Начать экзамен
+            // Инициализация
             startExamBtn.addEventListener('click', startExam);
-            
-            // Кнопка "Темы"
-            topicBtn.addEventListener('click', function() {
-                alert("Выберите тему из списка для изучения конкретных вопросов");
-            });
-            
-            // Кнопка меню
-            menuToggle.addEventListener('click', function() {
-                alert("Меню приложения");
-            });
-            
-            // Следующий вопрос
+            restartBtn.addEventListener('click', restartExam);
             nextQuestionBtn.addEventListener('click', nextQuestion);
+            topicBtn.addEventListener('click', showTopics);
             
             // Управление с клавиатуры
             document.addEventListener('keydown', function(e) {
                 if (questionScreen.style.display === 'block') {
-                    // Выбор ответа цифрами 1-6
                     if (e.key >= '1' && e.key <= '6') {
                         const answerIndex = parseInt(e.key) - 1;
-                        if (answerIndex < currentQuestions[currentQuestionIndex].answers.length) {
-                            checkAnswer(answerIndex);
-                        }
+                        checkAnswer(answerIndex);
                     }
-                    
-                    // Enter для следующего вопроса
-                    if (e.key === 'Enter' && nextQuestionBtn.style.display !== 'none') {
+                    if (e.key === 'Enter') {
                         nextQuestion();
                     }
                 }
@@ -658,45 +741,45 @@
                 historyItems.innerHTML = '';
                 
                 mainScreen.style.display = 'none';
+                resultScreen.style.display = 'none';
                 questionScreen.style.display = 'block';
                 
                 showQuestion();
             }
             
             function showQuestion() {
+                if (currentQuestionIndex >= currentQuestions.length) {
+                    finishExam();
+                    return;
+                }
+                
                 const question = currentQuestions[currentQuestionIndex];
                 questionText.textContent = question.question;
                 
-                // Очистка контейнера ответов
                 answersContainer.innerHTML = '';
-                
-                // Добавление кнопок ответов
                 question.answers.forEach((answer, index) => {
-                    const answerBtn = document.createElement('button');
-                    answerBtn.className = 'answer-btn';
-                    answerBtn.textContent = `${index + 1}. ${answer}`;
-                    answerBtn.addEventListener('click', () => checkAnswer(index));
-                    answersContainer.appendChild(answerBtn);
+                    const button = document.createElement('button');
+                    button.className = 'answer-btn';
+                    button.textContent = `${index + 1}. ${answer}`;
+                    button.addEventListener('click', () => checkAnswer(index));
+                    answersContainer.appendChild(button);
                 });
                 
-                // Обработка изображений
+                // Обработка изображения
+                imageContainer.style.display = 'none';
                 imageContainer.innerHTML = '';
                 if (question.hasImage) {
                     const img = document.createElement('img');
                     img.src = 'https://via.placeholder.com/600x300/1a2a6c/ffffff?text=Тарифная+таблица';
-                    img.alt = question.imageAlt || 'Иллюстрация к вопросу';
+                    img.alt = 'Иллюстрация к вопросу';
                     imageContainer.appendChild(img);
                     imageContainer.style.display = 'block';
-                } else {
-                    imageContainer.style.display = 'none';
                 }
                 
-                // Сброс обратной связи
                 correctFeedback.style.display = 'none';
                 incorrectFeedback.style.display = 'none';
                 nextQuestionBtn.style.display = 'none';
                 
-                // Обновление прогресса
                 const progress = ((currentQuestionIndex) / currentQuestions.length) * 100;
                 progressBar.style.width = `${progress}%`;
             }
@@ -705,9 +788,9 @@
                 const question = currentQuestions[currentQuestionIndex];
                 const isCorrect = selectedIndex === question.correct;
                 
-                // Отключение кнопок ответов
-                const answerBtns = document.querySelectorAll('.answer-btn');
-                answerBtns.forEach((btn, index) => {
+                // Отключить кнопки
+                const buttons = answersContainer.querySelectorAll('.answer-btn');
+                buttons.forEach((btn, index) => {
                     btn.style.pointerEvents = 'none';
                     if (index === question.correct) {
                         btn.style.borderColor = '#28a745';
@@ -718,7 +801,6 @@
                     }
                 });
                 
-                // Показать обратную связь
                 if (isCorrect) {
                     correctFeedback.style.display = 'block';
                     score++;
@@ -729,28 +811,38 @@
                     answerHistory.push('incorrect');
                 }
                 
-                // Показать кнопку "Далее"
                 nextQuestionBtn.style.display = 'block';
-                
-                // Обновить историю
                 updateHistory();
             }
             
             function nextQuestion() {
                 currentQuestionIndex++;
-                
-                if (currentQuestionIndex < currentQuestions.length) {
-                    showQuestion();
-                } else {
-                    finishExam();
-                }
+                showQuestion();
             }
             
             function finishExam() {
                 questionScreen.style.display = 'none';
-                mainScreen.style.display = 'flex';
+                resultScreen.style.display = 'block';
                 
-                alert(`Экзамен завершен!\nВаш результат: ${score} из ${currentQuestions.length} (${Math.round(score/currentQuestions.length*100)}%)`);
+                finalScore.textContent = `${score}/${currentQuestions.length}`;
+                
+                const percentage = (score / currentQuestions.length) * 100;
+                if (percentage >= 80) {
+                    resultMessage.textContent = "Отличный результат! Вы готовы к экзамену!";
+                } else if (percentage >= 60) {
+                    resultMessage.textContent = "Хороший результат, но нужно еще немного практики.";
+                } else {
+                    resultMessage.textContent = "Вам нужно больше практиковаться перед экзаменом.";
+                }
+            }
+            
+            function restartExam() {
+                resultScreen.style.display = 'none';
+                mainScreen.style.display = 'flex';
+            }
+            
+            function showTopics() {
+                alert("Выберите тему из списка для изучения конкретных вопросов");
             }
             
             function updateHistory() {
