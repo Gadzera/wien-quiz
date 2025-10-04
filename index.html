@@ -1,645 +1,767 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wiener Taxi Prüfungsassistent</title>
-
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-:root{
-  --brand:#2563eb; --brand-2:#60a5fa; --ok:#16a34a; --err:#dc2626; --warn:#f59e0b;
-  --bg:#ffffff; --panel:#ffffff; --text:#0f172a; --muted:#6b7280;
-  --chip:#f8fafc; --border:#e5e7eb; --shadow:0 10px 30px rgba(2,6,23,.15); --radius:14px;
-}
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#0b1020; --panel:#0f172a; --text:#e5e7eb; --muted:#94a3b8; --chip:#0b1225; --border:#1f2937; --shadow:0 10px 40px rgba(0,0,0,.45); }
-}
-*{ box-sizing:border-box } html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,Roboto,sans-serif; }
-#map{ position:fixed; inset:0; z-index:1; }
-
-/* topbar - УБИРАЕМ КНОПКУ THEMEN ОТСЮДА */
-.topbar{
-  position:fixed;
-  top:12px;
-  left:12px;
-  right:12px;
-  display:flex;
-  justify-content:flex-end; /* Только иконки справа */
-  gap:8px;
-  z-index:1500;
-}
-
-.btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
-.btn.secondary{ background:#334155; }
-.iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.95; cursor:pointer; }
-.spacer{ flex:1 }
-
-/* sidebar - ДОБАВЛЯЕМ КНОПКУ MENU СЛЕВА */
-.sidebar-toggle{
-  position:fixed;
-  top:12px;
-  left:12px;
-  z-index:1600;
-}
-.sidebar{ position:fixed; top:64px; left:12px; z-index:1000; width:420px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none; }
-.sidebar h3{ margin:0 0 8px 0; }
-.cat{ display:flex; align-items:center; gap:8px; padding:8px; margin:8px 0; background:var(--chip); border-left:4px solid var(--brand); border-radius:10px; }
-.cat .meta{ margin-left:auto; font-size:12px; color:var(--muted); }
-.small{ font-size:12px; color:var(--muted); }
-hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
-
-/* quiz */
-.quiz-panel{ position:fixed; top:64px; right:12px; z-index:1000; width:500px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:none; }
-.question{ font-weight:800; margin:8px 0 10px; text-align:center; }
-.progress{ text-align:center; font-size:13px; color:var(--muted); }
-.progressbar{ height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; margin:8px 0 12px; }
-.progressbar-fill{ height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2)); width:0%; transition:width .25s ease; }
-.options{ display:grid; gap:8px; }
-.option{ padding:12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; background:transparent; }
-.option:hover{ border-color:var(--brand); background:rgba(37,99,235,.07); }
-.option.correct{ border-color:var(--ok); background:#f0fdf4; }
-.option.incorrect{ border-color:var(--err); background:#fef2f2; }
-.replay-row{ display:flex; gap:8px; justify-content:center; margin:6px 0 4px; }
-.next-btn,.end-btn{ margin-top:10px; width:100%; font-weight:800; border:none; border-radius:10px; padding:10px 14px; color:white; background:linear-gradient(180deg,var(--brand),#1e40af); cursor:pointer; }
-.end-btn.secondary{ background:#334155; }
-
-/* voice button */
-.voice-btn{ background:linear-gradient(180deg,#8b5cf6,#7c3aed) !important; }
-.voice-listening{ background:linear-gradient(180deg,#dc2626,#b91c1c) !important; animation:pulse 1.5s infinite; }
-@keyframes pulse{ 0%{ opacity:1; } 50%{ opacity:0.7; } 100%{ opacity:1; } }
-
-/* Marker icons */
-.leaflet-div-icon { background: transparent; border: none; }
-.mk{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:900; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.9); }
-.mk.blue{ background:#2563eb; }
-.mk.green{ background:#16a34a; }
-.mk.red{ background:#dc2626; }
-.mk.pulse{ box-shadow:0 0 0 0 rgba(37,99,235,.45); animation:mkpulse 1.4s infinite; }
-@keyframes mkpulse{ 0%{ box-shadow:0 0 0 0 rgba(37,99,235,.45);} 70%{ box-shadow:0 0 0 16px rgba(37,99,235,0);} 100%{ box-shadow:0 0 0 0 rgba(37,99,235,0);} }
-
-/* map popup */
-.answer-popup { font-weight: bold; color: #1e40af; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Венский Такси Ассистент для Экзамена</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        header {
+            background: linear-gradient(to right, #1a2a6c, #b21f1f);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid #fdbb2d;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .menu-section {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #1a2a6c;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #fdbb2d;
+        }
+        
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .topic-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .topic-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-color: #1a2a6c;
+        }
+        
+        .exam-section {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .exam-btn {
+            background: linear-gradient(to right, #1a2a6c, #b21f1f);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .exam-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.3);
+        }
+        
+        .instructions {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .keyboard-hint {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .key {
+            background: #1a2a6c;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .history-section {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .history-items {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .history-marker {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        
+        .correct {
+            background-color: #28a745;
+        }
+        
+        .incorrect {
+            background-color: #dc3545;
+        }
+        
+        .menu-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #1a2a6c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+        
+        .question-screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .question-text {
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .answers-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .answer-btn {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        
+        .answer-btn:hover {
+            border-color: #1a2a6c;
+            background-color: #f0f4ff;
+        }
+        
+        .image-container {
+            margin: 20px 0;
+            max-width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #1a2a6c, #b21f1f);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .feedback {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .correct-feedback {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .incorrect-feedback {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .next-btn {
+            background: #1a2a6c;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .next-btn:hover {
+            background: #0d1b4d;
+            transform: translateY(-2px);
+        }
+        
+        .topic-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #fdbb2d;
+            color: #1a2a6c;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+        
+        .topic-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .topics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .exam-btn {
+                padding: 12px 25px;
+                font-size: 16px;
+            }
+            
+            .topic-btn {
+                top: 80px;
+                left: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <button class="topic-btn" id="topicBtn">Темы</button>
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        
+        <header>
+            <h1>Венский Такси Ассистент для Экзамена</h1>
+            <div class="subtitle">Подготовка к Венскому такси экзамену</div>
+        </header>
+        
+        <div class="main-content" id="mainScreen">
+            <div class="menu-section">
+                <h2>Языковой экзамен - Темы</h2>
+                <div class="topics-grid">
+                    <div class="topic-item">I.1) Правительственные здания (С.6)</div>
+                    <div class="topic-item">I.2) Судебные здания (С.6-7)</div>
+                    <div class="topic-item">I.3) Федеральная полиция (С.7)</div>
+                    <div class="topic-item">I.4) Городские полицейские участки (С.7-10)</div>
+                    <div class="topic-item">I.19) Пересечения на Гюртеле (С.23)</div>
+                    <div class="topic-item">II) Регламент работы (С.39-56)</div>
+                    <div class="topic-item">III) Венский тариф (С.58-61)</div>
+                    <div class="topic-item">IV) Правила дорожного движения (С.62-75)</div>
+                    <div class="topic-item">Общие правила дорожного движения</div>
+                    <div class="topic-item">Достопримечательности Вены</div>
+                    <div class="topic-item">Правила безопасности</div>
+                    <div class="topic-item">Обслуживание клиентов</div>
+                </div>
+            </div>
+            
+            <div class="exam-section">
+                <h2>Экзаменационный режим</h2>
+                <p>10 вопросов в официальном стиле</p>
+                <button class="exam-btn" id="startExam">Начать официальный блок</button>
+                
+                <div class="instructions">
+                    <p><strong>Управление с клавиатуры:</strong></p>
+                    <div class="keyboard-hint">
+                        <div class="key">1</div>
+                        <div class="key">2</div>
+                        <div class="key">3</div>
+                        <div class="key">4</div>
+                        <div class="key">5</div>
+                        <div class="key">6</div>
+                        <div class="key">↵</div>
+                    </div>
+                    <p>Цифры 1-6 для выбора ответа, Enter = Далее</p>
+                </div>
+            </div>
+            
+            <div class="history-section">
+                <h2>История ответов</h2>
+                <p>Ваши последние ответы:</p>
+                <div class="history-items" id="historyItems">
+                    <!-- Маркеры истории будут добавляться здесь динамически -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="question-screen" id="questionScreen">
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+            <div class="question-text" id="questionText"></div>
+            
+            <div class="image-container" id="imageContainer">
+                <!-- Изображения будут вставляться здесь для вопросов о тарифах -->
+            </div>
+            
+            <div class="answers-container" id="answersContainer">
+                <!-- Кнопки ответов будут вставляться здесь динамически -->
+            </div>
+            
+            <div class="feedback correct-feedback" id="correctFeedback">
+                ✓ Правильно!
+            </div>
+            
+            <div class="feedback incorrect-feedback" id="incorrectFeedback">
+                ✗ Неправильно! Правильный ответ: <span id="correctAnswer"></span>
+            </div>
+            
+            <button class="next-btn" id="nextQuestion">Далее (Enter)</button>
+        </div>
+    </div>
 
-<div id="map"></div>
+    <script>
+        // База данных вопросов - можно редактировать без изменения кода
+        const questionsData = {
+            "government": [
+                {
+                    question: "Какое из следующих зданий находится на Ринге в Вене?",
+                    answers: [
+                        "Венская ратуша",
+                        "Дворец Шёнбрунн",
+                        "Дунайская башня",
+                        "Дом Хундертвассера",
+                        "Центральное кладбище",
+                        "UNO-City"
+                    ],
+                    correct: 0,
+                    topic: "I.1) Правительственные здания",
+                    hasImage: false
+                },
+                {
+                    question: "Где находится Федеральное министерство финансов Австрии?",
+                    answers: [
+                        "Йоханнесгассе 5, 1010 Вена",
+                        "Херренгассе 23, 1010 Вена",
+                        "Баллгассе 2, 1010 Вена",
+                        "Миноритенплац 3, 1010 Вена",
+                        "Штубенринг 1, 1010 Вена",
+                        "Доктор-Карл-Реннер-Ринг 3, 1010 Вена"
+                    ],
+                    correct: 0,
+                    topic: "I.1) Правительственные здания",
+                    hasImage: false
+                }
+            ],
+            "courts": [
+                {
+                    question: "Где находится Верховный суд Австрии?",
+                    answers: [
+                        "Фрайунг 6, 1010 Вена",
+                        "Шмерлингплац 1, 1010 Вена",
+                        "Йозефсплац 1, 1010 Вена",
+                        "Ферстельгассе 1, 1010 Вена",
+                        "Ландштрассе 12, 1030 Вена",
+                        "Фаворитенштрассе 15, 1040 Вена"
+                    ],
+                    correct: 2,
+                    topic: "I.2) Судебные здания",
+                    hasImage: false
+                }
+            ],
+            "police": [
+                {
+                    question: "Какая служба отвечает за дорожный надзор в Вене?",
+                    answers: [
+                        "Магистрат 46",
+                        "Федеральная полиция Вены",
+                        "Полиция земли Вена",
+                        "Магистрат 68",
+                        "Венские линии",
+                        "Магистрат 33"
+                    ],
+                    correct: 2,
+                    topic: "I.3) Федеральная полиция",
+                    hasImage: false
+                }
+            ],
+            "tariff": [
+                {
+                    question: "Какова начальная плата за поездку на такси в Вене?",
+                    answers: [
+                        "€ 3,80",
+                        "€ 4,20",
+                        "€ 5,00",
+                        "€ 2,50",
+                        "€ 3,00",
+                        "€ 4,80"
+                    ],
+                    correct: 0,
+                    topic: "III) Венский тариф",
+                    hasImage: true,
+                    imageAlt: "Таблица венских такси тарифов"
+                },
+                {
+                    question: "Сколько стоит километр по тарифу 2 в Вене?",
+                    answers: [
+                        "€ 1,80",
+                        "€ 2,10",
+                        "€ 1,50",
+                        "€ 2,50",
+                        "€ 1,30",
+                        "€ 1,95"
+                    ],
+                    correct: 0,
+                    topic: "III) Венский тариф",
+                    hasImage: true,
+                    imageAlt: "Таблица венских такси тарифов"
+                }
+            ],
+            "traffic": [
+                {
+                    question: "Какое ограничение скорости в жилых зонах Вены?",
+                    answers: [
+                        "20 км/ч",
+                        "30 км/ч",
+                        "50 км/ч",
+                        "60 км/ч",
+                        "70 км/ч",
+                        "Нет ограничения"
+                    ],
+                    correct: 1,
+                    topic: "IV) Правила дорожного движения",
+                    hasImage: false
+                },
+                {
+                    question: "Какое пересечение на Гюртеле известно своей сложной организацией движения?",
+                    answers: [
+                        "Вестгюртель / Мариахильфер Гюртель",
+                        "Лерхенфельдер Гюртель / Хернальсер Гюртель",
+                        "Верингер Гюртель / Дёблингер Гюртель",
+                        "Маргаретенгюртель / Виднер Гюртель",
+                        "Все перечисленные",
+                        "Ни один из перечисленных"
+                    ],
+                    correct: 4,
+                    topic: "I.19) Пересечения на Гюртеле",
+                    hasImage: false
+                }
+            ],
+            "general": [
+                {
+                    question: "Сколько человек можно перевозить в венском такси максимум?",
+                    answers: [
+                        "4 человека",
+                        "5 человек",
+                        "6 человек",
+                        "7 человек",
+                        "8 человек",
+                        "Неограниченно"
+                    ],
+                    correct: 0,
+                    topic: "Общие правила дорожного движения",
+                    hasImage: false
+                },
+                {
+                    question: "Что должен сделать таксист при посадке пассажира?",
+                    answers: [
+                        "Включить счетчик",
+                        "Предложить воду",
+                        "Рассказать о достопримечательностях",
+                        "Спросить о музыке",
+                        "Все перечисленные",
+                        "Только A и B"
+                    ],
+                    correct: 0,
+                    topic: "Обслуживание клиентов",
+                    hasImage: false
+                }
+            ]
+        };
 
-<!-- Кнопка меню слева отдельно -->
-<div class="sidebar-toggle">
-  <button class="btn" id="menuBtn">☰ Menü</button>
-</div>
-
-<!-- Иконки справа -->
-<div class="topbar">
-  <button class="iconbtn" id="voiceModeBtn" title="Sprachmodus">🎙️</button>
-  <button class="iconbtn" id="ttsToggleBtn" title="Sprachausgabe ein/aus">🔊</button>
-</div>
-
-<div class="sidebar" id="sidebar">
-  <h3>🗂️ Wiener Taxi Prüfungsassistent</h3>
-  <div style="text-align:center; margin:10px 0;">
-    <button class="btn voice-btn" id="voiceQuizBtn">🎙️ Sprachprüfung</button>
-  </div>
-  <div id="catList"></div>
-  <hr/>
-  <button id="startBtn" class="btn" style="width:100%;margin-top:6px;">▶️ Freies Quiz</button>
-  <button id="examBtn" class="btn secondary" style="width:100%;margin-top:8px;">📝 Prüfungsmodus (10 Fragen)</button>
-  <button id="officialBtn" class="btn secondary" style="width:100%;margin-top:8px;">✅ Amtlicher Block starten</button>
-  <p class="small" style="margin-top:8px">Tastatur: <b>1..6</b> für Antworten, <b>Enter</b> = Weiter.</p>
-</div>
-
-<div class="quiz-panel" id="quizPanel" aria-live="polite">
-  <div class="progress" id="progress"></div>
-  <div class="progressbar"><div class="progressbar-fill" id="progressFill"></div></div>
-
-  <div class="question" id="questionText"></div>
-
-  <div class="replay-row">
-    <button class="btn secondary" id="replayBtn" title="Frage wiederholen">🔁 Wiederholen</button>
-    <button class="btn secondary" id="replaySlowBtn" title="Frage langsamer wiederholen">🐢 Langsamer</button>
-    <button class="btn voice-btn" id="voiceBtn">🎤 Sprachantwort</button>
-  </div>
-  
-  <div class="small" style="text-align:center;margin-top:-6px;margin-bottom:6px;">Sagen Sie die Antwortnummer (1,2,3,4) oder Straßenname</div>
-
-  <div class="options" id="optionsContainer"></div>
-  <button class="next-btn" id="nextBtn" style="display:none;">Weiter →</button>
-  <div id="endBtns" style="display:none;">
-    <button class="end-btn" id="againBtn">🔄 Nochmal spielen</button>
-    <button class="end-btn secondary" id="backBtn">📖 Zurück</button>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<!-- ====== VOLLSTÄNDIGER DATENPAKET MIT ALLEN FRAGEN ====== -->
-<script type="application/json" id="data-pack">
-{
-  "1_regierungs": [
-    {"name":"Parlament (Nationalrat und Bundesrat)","address":"Dr.-Karl-Renner-Ring 3","coords":[48.207989,16.359167]},
-    {"name":"Bundespräsident (Präsidentschaftskanzlei)","address":"Ballhausplatz 1","coords":[48.208025,16.364581]},
-    {"name":"Bundeskanzleramt","address":"Ballhausplatz 2","coords":[48.208386,16.363781]},
-    {"name":"Bundesministerium für Inneres","address":"Herrengasse 7","coords":[48.209108,16.365931]},
-    {"name":"Bundesministerium für Europäische und Internationale Angelegenheiten","address":"Minoritenplatz 8","coords":[48.209347,16.364694]},
-    {"name":"Bundesministerium für Bildung, Wissenschaft und Forschung","address":"Minoritenplatz 5","coords":[48.209945,16.363575]},
-    {"name":"Bundesministerium für Digitalisierung und Wirtschaftsstandort","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Arbeit","address":"Taborstraße 1-3","coords":[48.212990,16.379061]},
-    {"name":"Bundesministerium für Finanzen","address":"Johannesgasse 5","coords":[48.205108,16.372069]},
-    {"name":"Bundesministerium für Klimaschutz, Umwelt, Energie, Mobilität, Innovation und Technologie","address":"Radetzkystraße 2","coords":[48.211219,16.386589]},
-    {"name":"Bundesministerium für Kunst, Kultur, öffentlichen Dienst und Sport","address":"Radetzkystraße 2","coords":[48.211219,16.386589]},
-    {"name":"Bundesministerium für Landwirtschaft, Regionen und Tourismus","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Soziales, Gesundheit, Pflege und Konsumentenschutz","address":"Stubenring 1","coords":[48.209917,16.382947]},
-    {"name":"Bundesministerium für Justiz","address":"Museumstraße 7","coords":[48.205833,16.355278]},
-    {"name":"Bundesministerium für Landesverteidigung","address":"Roßauer Lände 1","coords":[48.218186,16.367650]},
-    {"name":"Landesregierung und Bürgermeister/Landeshauptmann (Rathaus)","address":"Rathausplatz 1","coords":[48.210800,16.357400]}
-  ],
-
-  "2_gerichte": [
-    {"name":"Verfassungsgerichtshof","address":"Freyung 8","coords":[48.211478,16.366125]},
-    {"name":"Verwaltungsgerichtshof","address":"Judenplatz 11","coords":[48.211600,16.370111]},
-    {"name":"Oberster Gerichtshof","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
-    {"name":"Oberlandesgericht Wien","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
-    {"name":"Landesgericht für Zivilrechtssachen Wien","address":"Schmerlingplatz 10-11","coords":[48.206710,16.357590]},
-    {"name":"Landesgericht für Strafsachen","address":"Landesgerichtsstraße 11","coords":[48.213820,16.354970]},
-    {"name":"Justizanstalt Wien Josefstadt","address":"Wickenburggasse 18-20","coords":[48.213727,16.354119]},
-    {"name":"Rechnungshof","address":"Dampfschiffstraße 2","coords":[48.212610,16.388150]}
-  ],
-
-  "3_polizei": [
-    {"name":"Bundespolizeidirektion Wien - Sicherheitsdirektion","address":"Schottenring 7-9","coords":[48.2175,16.3736]},
-    {"name":"Verkehrsamt (Führerschein/Taxireferat)","address":"Dietrichgasse 27","coords":[48.2028,16.3917]},
-    {"name":"Fremdenpolizeiliches Büro","address":"Hernalser Gürtel 6-12","coords":[48.2167,16.3333]}
-  ],
-
-  "4_stadtpolizei": [
-    {"name":"Polizeikommando Innere Stadt","address":"Deutschmeisterplatz 3","coords":[48.2122,16.3694]},
-    {"name":"Polizeikommando Landstraße","address":"Juchgasse 19","coords":[48.2025,16.3911]},
-    {"name":"Polizeikommando Margareten","address":"Viktor Christ-Gasse 19","coords":[48.1886,16.3564]},
-    {"name":"Polizeikommando Josefstadt","address":"Fuhrmannsgasse 5","coords":[48.2131,16.3486]},
-    {"name":"Polizeikommando Favoriten","address":"Van der Nüll-Gasse 11","coords":[48.1703,16.3697]},
-    {"name":"Polizeikommando Simmering","address":"Enkplatz 3","coords":[48.1742,16.4181]},
-    {"name":"Polizeikommando Meidling","address":"Hohenbergstraße 1","coords":[48.1833,16.3333]},
-    {"name":"Polizeikommando Fünfhaus","address":"Tannengasse 6","coords":[48.2000,16.3333]},
-    {"name":"Polizeikommando Ottakring","address":"Wattgasse 15","coords":[48.2167,16.3167]},
-    {"name":"Polizeikommando Döbling","address":"Hohe Warte 32","coords":[48.2500,16.3500]},
-    {"name":"Polizeikommando Brigittenau","address":"Pappenheimgasse 33","coords":[48.2333,16.3667]},
-    {"name":"Polizeikommando Floridsdorf","address":"Hermann Bahr-Straße 3","coords":[48.2667,16.4000]},
-    {"name":"Polizeikommando Donaustadt","address":"Wagramer Straße 89","coords":[48.2333,16.4500]},
-    {"name":"Polizeikommando Liesing","address":"Lehmanngasse 3a","coords":[48.1333,16.2833]}
-  ],
-
-  "II_betriebsordnung": [
-    {"q":"Welche Personen dürfen im Fahrdienst tätig sein?","a":"Nur vertrauenswürdige Personen"},
-    {"q":"Wem ist der Taxilenkerausweis auf Verlangen zur Überprüfung auszuhändigen?","a":"Organen des öffentlichen Sicherheitsdienstes"},
-    {"q":"Wie verhalten Sie sich, wenn Sie den Taxilenkerausweis verloren haben?","a":"Unverzüglich Verlustanzeige machen"},
-    {"q":"Wer hat den Taxilenkerausweis auszustellen?","a":"Die zuständige Behörde"},
-    {"q":"Unter welchen Voraussetzungen ist es dem Lenker untersagt, ein Fahrzeug zu lenken?","a":"Bei Alkoholisierung, Müdigkeit oder Einnahme von Medikamenten"},
-    {"q":"Wie hat sich der Taxilenker im Fahrdienst zu verhalten?","a":"Besonnen, rücksichtsvoll, höflich und hilfsbereit"},
-    {"q":"Was haben Sie als Taxilenker nach Dienstende zu tun?","a":"Prüfen ob Gegenstände im Fahrzeug zurückgeblieben sind"},
-    {"q":"Was ist Fahrgästen bei Taxifahrten untersagt?","a":"Den Lenker behindern, Türen eigenmächtig öffnen, rauchen"},
-    {"q":"Was verstehen Sie unter Beförderungspflicht?","a":"Die Pflicht, grundsätzlich jeden Fahrgast innerhalb Wiens zu befördern"},
-    {"q":"Welche Personen können Sie von der Beförderung ausschließen?","a":"Personen die Sicherheit gefährden, Betrunkene, Personen mit ansteckenden Krankheiten"},
-    {"q":"Welche Hunde müssen befördert werden?","a":"Alle Hunde, wenn sie nicht aggressiv oder stark verschmutzt sind"},
-    {"q":"Müssen Assistenzhunde einen Maulkorb tragen?","a":"Nein"},
-    {"q":"Wie lang muss ein Taxi-KFZ mindestens sein?","a":"4,2 Meter"},
-    {"q":"Welche Unterlagen müssen mitgeführt werden?","a":"Wiener Landesbetriebsordnung, Gewerberegisterauszug, Taxitarif"},
-    {"q":"Wie viel Wechselgeld müssen Sie mit sich führen?","a":"Ausreichend für einen 50-Euro-Schein"},
-    {"q":"Wann darf die Taxileuchte nicht beleuchtet sein?","a":"Wenn Fahrgäste befördert werden oder bei bestellten Fahrten"},
-    {"q":"Wo dürfen Sie Fahrgäste aufnehmen?","a":"Auf Taxistandplätzen, bei Bestellungen, an der Bestelladresse"},
-    {"q":"Dürfen Sie mit Ihrem Taxi umherfahren, um Fahrgäste zu gewinnen?","a":"Nein"},
-    {"q":"Wie haben sich Taxis auf den Standplätzen aufzustellen?","a":"Nach der Zeit ihrer Ankunft einreihen und platzsparend aufstellen"},
-    {"q":"Wer darf das Standplatztelefon bedienen?","a":"Der Lenker des ersten Taxis"}
-  ],
-
-  "III_tarif": [
-    {"q":"Wie hoch ist die Grundtaxe am Tag?","a":"3,80 €"},
-    {"q":"Wie hoch ist die Grundtaxe in der Nacht / an Sonn- und Feiertagen?","a":"4,30 €"},
-    {"q":"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?","a":"34,80 €"},
-    {"q":"Der Nachtzuschlag gilt von … bis … Uhr.","a":"23:00–06:00"},
-    {"q":"Wie hoch ist die Streckentaxe für die ersten 5 Kilometer am Tag?","a":"0,95 Cent pro 210,53 Meter"},
-    {"q":"Wie hoch ist die Streckentaxe ab dem 5. Kilometer am Tag?","a":"0,58 Cent pro 344,83 Meter"},
-    {"q":"Wie hoch ist ein Zuschlag für bestellte Fahrten?","a":"2 Euro"},
-    {"q":"Wer verordnet den Wiener Taxitarif?","a":"Der Landeshauptmann (Bürgermeister)"},
-    {"q":"Wo verliert der Wiener Taxitarif seine Gültigkeit?","a":"Ab der Ortsgrenze"},
-    {"q":"Wie werden Botenfahrten verrechnet?","a":"Freie Vereinbarung oder laut Taxameter"},
-    {"q":"Welchen Steuersatz enthält eine Botenfahrt?","a":"20% MwSt"},
-    {"q":"Wie hoch ist der Zuschlag bei der Beförderung von mehr als 4 Personen?","a":"2 Euro"},
-    {"q":"Was tun bei Versagen des Fahrpreisanzeigers während der Fahrt?","a":"Fahrgast sofort informieren, Fahrt fortsetzen, Preis basierend auf Tarif berechnen"},
-    {"q":"In welcher Zeitspanne gilt der Sonn- und Feiertagstarif?","a":"0:00 bis 24:00 Uhr"},
-    {"q":"Was sind bestellte Fahrten?","a":"Fahrten die im Voraus über Standplatztelefon, App oder andere Kommunikationsdienste gebucht werden"}
-  ],
-
-  "IV_strassenverkehr": [
-    {"q":"Dürfen Taxis durch Wohnstraßen durchfahren?","a":"Nein, nur zu- und abfahren in Schrittgeschwindigkeit"},
-    {"q":"Was ist ein Einsatzfahrzeug?","a":"Fahrzeug mit Blaulicht und Folgetonhorn"},
-    {"q":"Wie verhalten Sie sich gegenüber einem Einsatzfahrzeug?","a":"Platz machen für Durchfahrt"},
-    {"q":"Was verstehen Sie unter Halten?","a":"Abstellen eines Fahrzeuges für maximal 10 Minuten"},
-    {"q":"Was verstehen Sie unter Parken?","a":"Halten eines Fahrzeuges länger als 10 Minuten"},
-    {"q":"Wann gilt der Lenker eines PKW als alkoholbeeinträchtigt?","a":"Bei 0,5 Promille Blutalkohol (für Taxifahrer 0,1 Promille)"},
-    {"q":"Dürfen Sie auf einer Vorrangstraße im Ortsgebiet links zufahren?","a":"Nein, außer in Einbahnstraßen"},
-    {"q":"Was verstehen Sie unter dem Reißverschlusssystem?","a":"Wechselseitiges Einordnen lassen von Fahrzeugen an Engstellen"},
-    {"q":"Dürfen Sie auf einem ungeregelten Schutzweg überholen?","a":"Nein"},
-    {"q":"Wie verhalten Sie sich vor einem Schutzweg?","a":"Geschwindigkeit so wählen, dass rechtzeitig angehalten werden kann"},
-    {"q":"Was bedeutet gelbes blinkendes Licht?","a":"Vorsicht"},
-    {"q":"Dürfen Taxis in Begegnungszonen einfahren?","a":"Ja"},
-    {"q":"Dürfen Sie die Rettungsgasse benutzen?","a":"Nein"},
-    {"q":"Was ist eine Rettungsgasse?","a":"Durchgängige Fahrmöglichkeit für Notfallfahrzeuge auf Autobahnen"},
-    {"q":"Wo muss eine Rettungsgasse gebildet werden?","a":"Auf Autobahnen und Schnellstraßen bei Stau"},
-    {"q":"Was ist der Vertrauensgrundsatz?","a":"Dass jeder Straßenbenützer darauf vertrauen darf, dass andere die Rechtsvorschriften befolgen"},
-    {"q":"Welche Personen sind vom Vertrauensgrundsatz ausgenommen?","a":"Kinder, Seh- oder Hörbehinderte, offensichtlich Gebrechliche"},
-    {"q":"Wie verhalten Sie sich beim Ausparken bei Beschädigung eines anderen KFZ?","a":"Polizei unverzüglich verständigen (Selbstanzeige)"},
-    {"q":"Dürfen Sie einen Mopedfahrer auf einer Eisenbahnkreuzung überholen?","a":"Nein"},
-    {"q":"Was verstehen Sie unter der freien Wahl des Fahrstreifens?","a":"Im Ortsgebiet bei mindestens zwei Fahrstreifen darf man den Fahrstreifen frei wählen"}
-  ],
-
-  "19_guertel": [
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den GÜRTEL überquert haben?","options":["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße"],"correct":"Sechshauser Straße"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den GÜRTEL überquert haben?","options":["Gablenzgasse","Thaliastraße","Mariahilfer Straße","Winckelmannstraße"],"correct":"Gablenzgasse"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Neustiftgasse über den GÜRTEL überquert haben?","options":["Koppstraße","Thaliastraße","Burggasse","Winckelmannstraße"],"correct":"Koppstraße"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Josefstädter Straße über den GÜRTEL überquert haben?","options":["Neulerchenfelder Straße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Neulerchenfelder Straße"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Alser Straße über den GÜRTEL überquert haben?","options":["Ottakringer Straße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Ottakringer Straße"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Währinger Straße über den GÜRTEL überquert haben?","options":["Gentzgasse","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Gentzgasse"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Nußdorfer Straße über den GÜRTEL überquert haben?","options":["Döblinger Hauptstraße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Döblinger Hauptstraße"}
-  ]
-}
-</script>
-
-<script>
-// ================= ОСНОВНОЙ КОД =================
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const toast = (m,ms=1900)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
-function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
-
-// ================= KARTE =================
-let map=null;
-try{
-  if(window.L){
-    map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution:'© OpenStreetMap' }).addTo(map);
-  }
-} catch(e){}
-let currentMarker = null;
-
-function icon(status='blue', pulse=false){
-  const sym = status==='green'?'✓':status==='red'?'✗':'•';
-  const cls = `mk ${status==='green'?'green':status==='red'?'red':'blue'} ${pulse?'pulse':''}`;
-  return (window.L && L.divIcon) ? L.divIcon({className:'', html:`<div class="${cls}">${sym}</div>`, iconSize:[26,26], iconAnchor:[13,13]}) : null;
-}
-
-function fly([lat,lng], zoom=16){ 
-    if(!map) return; 
-    map.flyTo([lat,lng], zoom, {duration:1.0}); 
-}
-
-function clearMap() {
-    if (currentMarker) {
-        map.removeLayer(currentMarker);
-        currentMarker = null;
-    }
-}
-
-function showLocationOnMap(coords, name, address, status = 'blue') {
-    clearMap();
-    
-    if (!coords) return;
-    
-    currentMarker = L.marker(coords, {icon: icon(status, true)}).addTo(map);
-    
-    const popupContent = `<div class="answer-popup"><b>${name}</b><br>${address}</div>`;
-    currentMarker.bindPopup(popupContent).openPopup();
-    
-    fly(coords, 16);
-}
-
-function updateMarkerStatus(status, correctAnswer = null) {
-    if (currentMarker) {
-        currentMarker.setIcon(icon(status, false));
-        if (correctAnswer) {
-            const newContent = currentMarker.getPopup().getContent() + `<br><div style="color: ${status === 'green' ? '#16a34a' : '#dc2626'}; margin-top: 5px;"><b>${correctAnswer}</b></div>`;
-            currentMarker.setPopupContent(newContent);
+        // Служебные функции для работы с вопросами
+        function getAllQuestions() {
+            let allQuestions = [];
+            for (const category in questionsData) {
+                allQuestions = allQuestions.concat(questionsData[category]);
+            }
+            return allQuestions;
         }
-    }
-}
 
-// ================= SPRACHERKENNUNG =================
-let speechRecognition = null;
-let isListening = false;
-
-function initSpeechRecognition() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        speechRecognition = new SpeechRecognition();
-        speechRecognition.continuous = false;
-        speechRecognition.interimResults = false;
-        speechRecognition.lang = 'de-DE';
-        
-        speechRecognition.onstart = () => {
-            isListening = true;
-            $("#voiceBtn").innerHTML = "🎤 Höre zu...";
-            $("#voiceBtn").classList.add("voice-listening");
-            toast("Sprechen Sie jetzt...");
-        };
-        
-        speechRecognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            processVoiceAnswer(transcript);
-        };
-        
-        speechRecognition.onerror = (event) => {
-            stopVoiceRecognition();
-        };
-        
-        speechRecognition.onend = () => {
-            stopVoiceRecognition();
-        };
-    } else {
-        $("#voiceBtn").style.display = "none";
-        $("#voiceQuizBtn").style.display = "none";
-    }
-}
-
-function startVoiceRecognition() {
-    if (!speechRecognition) return;
-    if (isListening) {
-        stopVoiceRecognition();
-        return;
-    }
-    
-    try {
-        speechRecognition.start();
-        toast("Höre zu... Sagen Sie die Antwortnummer");
-    } catch (error) {
-        toast("Fehler beim Mikrofonzugriff");
-    }
-}
-
-function stopVoiceRecognition() {
-    if (speechRecognition && isListening) {
-        speechRecognition.stop();
-    }
-    isListening = false;
-    $("#voiceBtn").innerHTML = "🎤 Sprachantwort";
-    $("#voiceBtn").classList.remove("voice-listening");
-}
-
-function processVoiceAnswer(transcript) {
-    const cleanAnswer = transcript.trim().toLowerCase();
-    const options = $$("#optionsContainer .option");
-    
-    const numberMatch = cleanAnswer.match(/(\d)/);
-    if (numberMatch && options[numberMatch[1] - 1]) {
-        const selectedOption = options[numberMatch[1] - 1];
-        selectedOption.click();
-        return;
-    }
-    
-    for (let i = 0; i < options.length; i++) {
-        const optionText = options[i].textContent.toLowerCase().replace(/^\d+\.\s*/, "");
-        if (cleanAnswer.includes(optionText) || optionText.includes(cleanAnswer)) {
-            options[i].click();
-            return;
+        function getRandomQuestions(count) {
+            const allQuestions = getAllQuestions();
+            const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
         }
-    }
-    
-    speak("Antwort nicht verstanden. Bitte sagen Sie die Antwortnummer.", 0.7);
-}
 
-// ================= SPRACHAUSGABE - MÄNNLICHE STIMME =================
-let ttsOn=true;
-const DEFAULT_RATE = 0.8;  // Langsamer für besseres Verständnis
-const SLOW_RATE = 0.5;     // Noch langsamer
-
-function speak(text, rate=DEFAULT_RATE){
-  if(!ttsOn || !text) return;
-  if(!('speechSynthesis' in window)) return;
-  
-  window.speechSynthesis.cancel();
-  
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "de-DE";
-  u.rate = rate;
-  u.pitch = 0.8;  // Tiefer für männliche Stimme
-  
-  window.speechSynthesis.speak(u);
-}
-
-// ================= DATEN =================
-const PACK = JSON.parse(document.getElementById('data-pack').textContent);
-
-const THEMEN = [
-  {key:"1_regierungs", title:"I.1) Regierungsgebäude", pages:"S.6", official:16},
-  {key:"2_gerichte", title:"I.2) Gerichtsgebäude", pages:"S.6-7", official:8},
-  {key:"3_polizei", title:"I.3) Bundespolizei", pages:"S.7", official:3},
-  {key:"4_stadtpolizei", title:"I.4) Stadtpolizeikommanden", pages:"S.7-10", official:14},
-  {key:"II_betriebsordnung", title:"II) Betriebsordnung", pages:"S.39-56", official:20},
-  {key:"III_tarif", title:"III) Wiener Tarif", pages:"S.58-61", official:15},
-  {key:"IV_strassenverkehr", title:"IV) Straßenverkehrsordnung", pages:"S.62-75", official:20},
-  {key:"19_guertel", title:"I.19) Gürtel Kreuzungen", pages:"S.23", official:7}
-];
-
-function buildQuestionsFromPack(){
-  const data={};
-  for(const [key,items] of Object.entries(PACK)){
-    if(!Array.isArray(items)) continue;
-    
-    data[key]=items.map(it=>{
-      const q = it.question || `Wo befindet sich ${it.name}?`;
-      const right = it.a || it.address;
-      
-      let distractors = it.distractors;
-      if (!distractors && it.a) {
-        distractors = shuffle(items.filter(o => o.a && o.a !== right).map(o => o.a)).slice(0, 3);
-      } else if (!distractors) {
-        distractors = shuffle(items.filter(o => o.address && o.address !== right).map(o => o.address)).slice(0, 3);
-      }
-      
-      const options = shuffle([right, ...distractors]).slice(0, 4);
-      
-      return {
-        name: it.name || it.q, 
-        address: it.address, 
-        coords: it.coords || null, 
-        question: q, 
-        options: options, 
-        correct: right
-      };
-    });
-  }
-  return data;
-}
-const DATA = buildQuestionsFromPack();
-
-// ================= QUIZ ENGINE =================
-let selected=[], pool=[], idx=0, score=0, examMode=false;
-let lastQuestionText="";
-let currentQuestion = null;
-
-function availableCount(key){ return (DATA[key]||[]).length; }
-function buildPool(keys){ const out=[]; keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); }); return shuffle(out); }
-
-function openQuiz(){
-  $("#quizPanel").style.display="block"; 
-  $("#sidebar").style.display="none";
-}
-
-async function showQuestion(first=false){
-  const q=pool[idx]; 
-  if(!q) return;
-  
-  currentQuestion = q;
-
-  $("#progress").textContent=`Frage ${idx+1} von ${pool.length}`;
-  $("#progressFill").style.width=`${Math.round((idx)/pool.length*100)}%`;
-  $("#questionText").textContent=q.question;
-
-  const cont=$("#optionsContainer"); cont.innerHTML="";
-  const options = q.options || [q.correct];
-  shuffle(options).forEach((opt,i)=>{
-    const d=document.createElement("div");
-    d.className="option"; d.tabIndex=0; d.dataset.correct=(opt===(q.correct));
-    d.innerHTML=`<strong>${i+1}.</strong> ${opt}`;
-    d.onclick=()=>checkAnswer(d,opt);
-    d.onkeydown=(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } };
-    cont.appendChild(d);
-  });
-  $("#nextBtn").style.display="none"; 
-  $("#endBtns").style.display="none";
-
-  if (q.coords) {
-    showLocationOnMap(q.coords, q.name || q.q, q.address || q.correct, 'blue');
-  } else {
-    clearMap();
-  }
-
-  lastQuestionText = q.question;
-  speak(lastQuestionText, DEFAULT_RATE);
-}
-
-async function checkAnswer(el,opt){
-  const q=currentQuestion; 
-  const right=(opt===(q.correct));
-  
-  $$("#optionsContainer .option").forEach(o=>o.onclick=null);
-  el.classList.add(right?"correct":"incorrect");
-  
-  if(!right){ 
-    const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); 
-    if(r) r.classList.add("correct"); 
-  }
-  
-  if(right) score++;
-
-  if (q.coords) {
-    updateMarkerStatus(right ? 'green' : 'red', q.address || q.correct);
-  }
-
-  $("#nextBtn").style.display="block";
-
-  if(right){
-    speak(`Richtig. ${q.correct}.`, DEFAULT_RATE);
-  }else{
-    speak(`Leider falsch. Richtig ist: ${q.correct}.`, DEFAULT_RATE);
-  }
-}
-
-function nextQuestion(){
-  idx++;
-  if(idx<pool.length){ 
-    showQuestion(); 
-  } else {
-    $("#questionText").textContent=`Fertig! Punkte: ${score}/${pool.length}`;
-    $("#optionsContainer").innerHTML=""; 
-    $("#progress").textContent=""; 
-    $("#progressFill").style.width="100%";
-    $("#nextBtn").style.display="none"; 
-    $("#endBtns").style.display="block"; 
-    clearMap();
-    speak(`Prüfung beendet. Sie haben ${score} von ${pool.length} Fragen richtig beantwortet.`, DEFAULT_RATE);
-  }
-}
-
-function backToMenu(){ 
-  $("#quizPanel").style.display="none"; 
-  $("#sidebar").style.display="block"; 
-  $("#endBtns").style.display="none"; 
-  clearMap(); 
-}
-
-function restartQuiz(){ 
-  $("#endBtns").style.display="none"; 
-  idx=0; score=0; 
-  pool=shuffle(pool); 
-  showQuestion(true); 
-}
-
-async function startQuiz(mode="normal"){
-  const checked=$$("#catList input[type=checkbox]:checked").map(x=>x.value);
-  if(checked.length===0){ toast("Bitte wählen Sie mindestens eine Kategorie!"); return; }
-  selected=checked; 
-  examMode=(mode==="exam"); 
-  pool=buildPool(selected);
-  if(examMode && pool.length>10) pool=pool.slice(0,10);
-  idx=0; score=0; 
-  openQuiz();
-  await showQuestion(true);
-}
-
-function startVoiceQuiz() {
-    startQuiz("normal");
-}
-
-// ================= UI EVENTS =================
-function loadCats(){
-  const wrap=$("#catList"); wrap.innerHTML="";
-  THEMEN.forEach(t=>{
-    const have=availableCount(t.key); 
-    const need=t.official||have;
-    const div=document.createElement("label"); 
-    div.className="cat";
-    div.innerHTML=`<input type="checkbox" value="${t.key}" ${["1_regierungs","2_gerichte","III_tarif"].includes(t.key) ? "checked" : ""}> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="meta">${have}/${need}</span>`;
-    wrap.appendChild(div);
-  });
-}
-
-// Initialisierung
-window.addEventListener("load", ()=>{
-    loadCats();
-    initSpeechRecognition();
-    toast("Wiener Taxi Prüfungsassistent geladen");
-});
-
-// Event-Handler
-$("#menuBtn").onclick = ()=>{ 
-  $("#sidebar").style.display = $("#sidebar").style.display==="none"?"block":"none"; 
-};
-$("#startBtn").onclick = ()=>{ startQuiz("normal"); };
-$("#examBtn").onclick  = ()=>{ startQuiz("exam"); };
-$("#officialBtn").onclick = ()=>{ startQuiz("official"); };
-$("#voiceQuizBtn").onclick = ()=>{ startVoiceQuiz(); };
-$("#nextBtn").onclick  = nextQuestion;
-$("#againBtn").onclick = restartQuiz;
-$("#backBtn").onclick  = backToMenu;
-$("#voiceBtn").onclick = startVoiceRecognition;
-$("#replayBtn").onclick = ()=>{ speak(lastQuestionText, DEFAULT_RATE); };
-$("#replaySlowBtn").onclick = ()=>{ speak(lastQuestionText, SLOW_RATE); };
-$("#ttsToggleBtn").onclick = ()=>{ ttsOn=!ttsOn; toast(ttsOn?"🔊 Sprachausgabe eingeschaltet":"🔇 Sprachausgabe ausgeschaltet"); };
-
-// Tastaturkürzel
-document.addEventListener("keydown",(e)=>{
-  if($("#quizPanel").style.display!=="block") return;
-  const i=["1","2","3","4","5","6"].indexOf(e.key);
-  if(i>=0){ const opt=$$("#optionsContainer .option")[i]; if(opt && opt.onclick) opt.click(); }
-  if(e.key==="Enter" && getComputedStyle($("#nextBtn")).display!=="none") nextQuestion();
-});
-
-$("#sidebar").style.display = "block";
-</script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы UI
+            const mainScreen = document.getElementById('mainScreen');
+            const questionScreen = document.getElementById('questionScreen');
+            const startExamBtn = document.getElementById('startExam');
+            const menuToggle = document.getElementById('menuToggle');
+            const topicBtn = document.getElementById('topicBtn');
+            const questionText = document.getElementById('questionText');
+            const answersContainer = document.getElementById('answersContainer');
+            const nextQuestionBtn = document.getElementById('nextQuestion');
+            const progressBar = document.getElementById('progressBar');
+            const correctFeedback = document.getElementById('correctFeedback');
+            const incorrectFeedback = document.getElementById('incorrectFeedback');
+            const correctAnswerSpan = document.getElementById('correctAnswer');
+            const imageContainer = document.getElementById('imageContainer');
+            const historyItems = document.getElementById('historyItems');
+            
+            // Состояние экзамена
+            let currentQuestionIndex = 0;
+            let score = 0;
+            let answerHistory = [];
+            let currentQuestions = [];
+            
+            // Начать экзамен
+            startExamBtn.addEventListener('click', startExam);
+            
+            // Кнопка "Темы"
+            topicBtn.addEventListener('click', function() {
+                alert("Выберите тему из списка для изучения конкретных вопросов");
+            });
+            
+            // Кнопка меню
+            menuToggle.addEventListener('click', function() {
+                alert("Меню приложения");
+            });
+            
+            // Следующий вопрос
+            nextQuestionBtn.addEventListener('click', nextQuestion);
+            
+            // Управление с клавиатуры
+            document.addEventListener('keydown', function(e) {
+                if (questionScreen.style.display === 'block') {
+                    // Выбор ответа цифрами 1-6
+                    if (e.key >= '1' && e.key <= '6') {
+                        const answerIndex = parseInt(e.key) - 1;
+                        if (answerIndex < currentQuestions[currentQuestionIndex].answers.length) {
+                            checkAnswer(answerIndex);
+                        }
+                    }
+                    
+                    // Enter для следующего вопроса
+                    if (e.key === 'Enter' && nextQuestionBtn.style.display !== 'none') {
+                        nextQuestion();
+                    }
+                }
+            });
+            
+            function startExam() {
+                currentQuestions = getRandomQuestions(10);
+                currentQuestionIndex = 0;
+                score = 0;
+                answerHistory = [];
+                historyItems.innerHTML = '';
+                
+                mainScreen.style.display = 'none';
+                questionScreen.style.display = 'block';
+                
+                showQuestion();
+            }
+            
+            function showQuestion() {
+                const question = currentQuestions[currentQuestionIndex];
+                questionText.textContent = question.question;
+                
+                // Очистка контейнера ответов
+                answersContainer.innerHTML = '';
+                
+                // Добавление кнопок ответов
+                question.answers.forEach((answer, index) => {
+                    const answerBtn = document.createElement('button');
+                    answerBtn.className = 'answer-btn';
+                    answerBtn.textContent = `${index + 1}. ${answer}`;
+                    answerBtn.addEventListener('click', () => checkAnswer(index));
+                    answersContainer.appendChild(answerBtn);
+                });
+                
+                // Обработка изображений
+                imageContainer.innerHTML = '';
+                if (question.hasImage) {
+                    const img = document.createElement('img');
+                    img.src = 'https://via.placeholder.com/600x300/1a2a6c/ffffff?text=Тарифная+таблица';
+                    img.alt = question.imageAlt || 'Иллюстрация к вопросу';
+                    imageContainer.appendChild(img);
+                    imageContainer.style.display = 'block';
+                } else {
+                    imageContainer.style.display = 'none';
+                }
+                
+                // Сброс обратной связи
+                correctFeedback.style.display = 'none';
+                incorrectFeedback.style.display = 'none';
+                nextQuestionBtn.style.display = 'none';
+                
+                // Обновление прогресса
+                const progress = ((currentQuestionIndex) / currentQuestions.length) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            function checkAnswer(selectedIndex) {
+                const question = currentQuestions[currentQuestionIndex];
+                const isCorrect = selectedIndex === question.correct;
+                
+                // Отключение кнопок ответов
+                const answerBtns = document.querySelectorAll('.answer-btn');
+                answerBtns.forEach((btn, index) => {
+                    btn.style.pointerEvents = 'none';
+                    if (index === question.correct) {
+                        btn.style.borderColor = '#28a745';
+                        btn.style.backgroundColor = '#d4edda';
+                    } else if (index === selectedIndex && !isCorrect) {
+                        btn.style.borderColor = '#dc3545';
+                        btn.style.backgroundColor = '#f8d7da';
+                    }
+                });
+                
+                // Показать обратную связь
+                if (isCorrect) {
+                    correctFeedback.style.display = 'block';
+                    score++;
+                    answerHistory.push('correct');
+                } else {
+                    incorrectFeedback.style.display = 'block';
+                    correctAnswerSpan.textContent = question.answers[question.correct];
+                    answerHistory.push('incorrect');
+                }
+                
+                // Показать кнопку "Далее"
+                nextQuestionBtn.style.display = 'block';
+                
+                // Обновить историю
+                updateHistory();
+            }
+            
+            function nextQuestion() {
+                currentQuestionIndex++;
+                
+                if (currentQuestionIndex < currentQuestions.length) {
+                    showQuestion();
+                } else {
+                    finishExam();
+                }
+            }
+            
+            function finishExam() {
+                questionScreen.style.display = 'none';
+                mainScreen.style.display = 'flex';
+                
+                alert(`Экзамен завершен!\nВаш результат: ${score} из ${currentQuestions.length} (${Math.round(score/currentQuestions.length*100)}%)`);
+            }
+            
+            function updateHistory() {
+                historyItems.innerHTML = '';
+                answerHistory.forEach(result => {
+                    const marker = document.createElement('div');
+                    marker.className = `history-marker ${result}`;
+                    historyItems.appendChild(marker);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
