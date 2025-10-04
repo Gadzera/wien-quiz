@@ -21,14 +21,14 @@
 *{ box-sizing:border-box } html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,Roboto,sans-serif; }
 #map{ position:fixed; inset:0; z-index:1; }
 
-/* topbar */
+/* topbar - УБИРАЕМ КНОПКУ THEMEN ОТСЮДА */
 .topbar{
   position:fixed;
   top:12px;
   left:12px;
   right:12px;
   display:flex;
-  justify-content:space-between;
+  justify-content:flex-end; /* Только иконки справа */
   gap:8px;
   z-index:1500;
 }
@@ -38,8 +38,14 @@
 .iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.95; cursor:pointer; }
 .spacer{ flex:1 }
 
-/* sidebar */
-.sidebar{ position:fixed; top:64px; right:12px; z-index:1000; width:420px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none; }
+/* sidebar - ДОБАВЛЯЕМ КНОПКУ MENU СЛЕВА */
+.sidebar-toggle{
+  position:fixed;
+  top:12px;
+  left:12px;
+  z-index:1600;
+}
+.sidebar{ position:fixed; top:64px; left:12px; z-index:1000; width:420px; max-height:78vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none; }
 .sidebar h3{ margin:0 0 8px 0; }
 .cat{ display:flex; align-items:center; gap:8px; padding:8px; margin:8px 0; background:var(--chip); border-left:4px solid var(--brand); border-radius:10px; }
 .cat .meta{ margin-left:auto; font-size:12px; color:var(--muted); }
@@ -83,9 +89,13 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 
 <div id="map"></div>
 
+<!-- Кнопка меню слева отдельно -->
+<div class="sidebar-toggle">
+  <button class="btn" id="menuBtn">☰ Menü</button>
+</div>
+
+<!-- Иконки справа -->
 <div class="topbar">
-  <button class="btn" id="menuBtn">☰ Themen</button>
-  <div class="spacer"></div>
   <button class="iconbtn" id="voiceModeBtn" title="Sprachmodus">🎙️</button>
   <button class="iconbtn" id="ttsToggleBtn" title="Sprachausgabe ein/aus">🔊</button>
 </div>
@@ -127,10 +137,10 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 
 <div id="toast" class="toast"></div>
 
-<!-- ====== VOLLSTÄNDIGER DATENPAKET ====== -->
+<!-- ====== VOLLSTÄNDIGER DATENPAKET MIT ALLEN FRAGEN ====== -->
 <script type="application/json" id="data-pack">
 {
-  "regierungs": [
+  "1_regierungs": [
     {"name":"Parlament (Nationalrat und Bundesrat)","address":"Dr.-Karl-Renner-Ring 3","coords":[48.207989,16.359167]},
     {"name":"Bundespräsident (Präsidentschaftskanzlei)","address":"Ballhausplatz 1","coords":[48.208025,16.364581]},
     {"name":"Bundeskanzleramt","address":"Ballhausplatz 2","coords":[48.208386,16.363781]},
@@ -149,7 +159,7 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     {"name":"Landesregierung und Bürgermeister/Landeshauptmann (Rathaus)","address":"Rathausplatz 1","coords":[48.210800,16.357400]}
   ],
 
-  "gerichte": [
+  "2_gerichte": [
     {"name":"Verfassungsgerichtshof","address":"Freyung 8","coords":[48.211478,16.366125]},
     {"name":"Verwaltungsgerichtshof","address":"Judenplatz 11","coords":[48.211600,16.370111]},
     {"name":"Oberster Gerichtshof","address":"Schmerlingplatz 10-11","coords":[48.206450,16.357230]},
@@ -160,58 +170,30 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     {"name":"Rechnungshof","address":"Dampfschiffstraße 2","coords":[48.212610,16.388150]}
   ],
 
-  "polizei": [
+  "3_polizei": [
     {"name":"Bundespolizeidirektion Wien - Sicherheitsdirektion","address":"Schottenring 7-9","coords":[48.2175,16.3736]},
-    {"name":"Verkehrsamt (Führerschein/Taxireferat)","address":"Dietrichgasse 27","coords":[48.2028,16.3917]}
+    {"name":"Verkehrsamt (Führerschein/Taxireferat)","address":"Dietrichgasse 27","coords":[48.2028,16.3917]},
+    {"name":"Fremdenpolizeiliches Büro","address":"Hernalser Gürtel 6-12","coords":[48.2167,16.3333]}
   ],
 
-  "stadtpolizei": [
+  "4_stadtpolizei": [
     {"name":"Polizeikommando Innere Stadt","address":"Deutschmeisterplatz 3","coords":[48.2122,16.3694]},
     {"name":"Polizeikommando Landstraße","address":"Juchgasse 19","coords":[48.2025,16.3911]},
-    {"name":"Polizeikommando Margareten","address":"Viktor Christ-Gasse 19","coords":[48.1886,16.3564]}
+    {"name":"Polizeikommando Margareten","address":"Viktor Christ-Gasse 19","coords":[48.1886,16.3564]},
+    {"name":"Polizeikommando Josefstadt","address":"Fuhrmannsgasse 5","coords":[48.2131,16.3486]},
+    {"name":"Polizeikommando Favoriten","address":"Van der Nüll-Gasse 11","coords":[48.1703,16.3697]},
+    {"name":"Polizeikommando Simmering","address":"Enkplatz 3","coords":[48.1742,16.4181]},
+    {"name":"Polizeikommando Meidling","address":"Hohenbergstraße 1","coords":[48.1833,16.3333]},
+    {"name":"Polizeikommando Fünfhaus","address":"Tannengasse 6","coords":[48.2000,16.3333]},
+    {"name":"Polizeikommando Ottakring","address":"Wattgasse 15","coords":[48.2167,16.3167]},
+    {"name":"Polizeikommando Döbling","address":"Hohe Warte 32","coords":[48.2500,16.3500]},
+    {"name":"Polizeikommando Brigittenau","address":"Pappenheimgasse 33","coords":[48.2333,16.3667]},
+    {"name":"Polizeikommando Floridsdorf","address":"Hermann Bahr-Straße 3","coords":[48.2667,16.4000]},
+    {"name":"Polizeikommando Donaustadt","address":"Wagramer Straße 89","coords":[48.2333,16.4500]},
+    {"name":"Polizeikommando Liesing","address":"Lehmanngasse 3a","coords":[48.1333,16.2833]}
   ],
 
-  "hotels": [
-    {"name":"Hotel Sacher Wien","address":"Philharmonikerstraße 4","coords":[48.2044,16.3697]},
-    {"name":"Hotel Imperial","address":"Kärntner Ring 16","coords":[48.2025,16.3736]},
-    {"name":"Hotel Bristol","address":"Kärntner Ring 1","coords":[48.2042,16.3731]},
-    {"name":"Hotel Marriott","address":"Parkring 12a","coords":[48.2078,16.3797]}
-  ],
-
-  "cafes": [
-    {"name":"Café Central","address":"Herrengasse 14","coords":[48.2106,16.3664]},
-    {"name":"Café Landtmann","address":"Universitätsring 4","coords":[48.2128,16.3619]},
-    {"name":"Café Hawelka","address":"Dorotheergasse 6","coords":[48.2086,16.3686]},
-    {"name":"Café Mozart","address":"Albertinaplatz 2","coords":[48.2044,16.3683]}
-  ],
-
-  "krankenhaus": [
-    {"name":"Allgemeines Krankenhaus (AKH)","address":"Währinger Gürtel 18-20","coords":[48.2200,16.3475]},
-    {"name":"Krankenhaus Hietzing","address":"Wolkersbergenstraße 1","coords":[48.1750,16.2667]},
-    {"name":"Krankenhaus Rudolfstiftung","address":"Juchgasse 25","coords":[48.2022,16.3914]}
-  ],
-
-  "kultur": [
-    {"name":"Burgtheater","address":"Universitätsring 2","coords":[48.2106,16.3619]},
-    {"name":"Staatsoper","address":"Opernring 2","coords":[48.2036,16.3692]},
-    {"name":"Volksoper","address":"Währinger Straße 78","coords":[48.2300,16.3483]},
-    {"name":"Theater an der Wien","address":"Linke Wienzeile 6","coords":[48.1992,16.3542]}
-  ],
-
-  "museen": [
-    {"name":"Kunsthistorisches Museum","address":"Burgring 5","coords":[48.2039,16.3617]},
-    {"name":"Naturhistorisches Museum","address":"Burgring 7","coords":[48.2053,16.3600]},
-    {"name":"Albertina","address":"Albertinaplatz 1","coords":[48.2047,16.3683]},
-    {"name":"Weltmuseum Wien","address":"Heldenplatz","coords":[48.2058,16.3636]}
-  ],
-
-  "universitäten": [
-    {"name":"Universität Wien","address":"Universitätsring 1","coords":[48.2131,16.3597]},
-    {"name":"Technische Universität Wien","address":"Karlsplatz 13","coords":[48.1992,16.3694]},
-    {"name":"Wirtschaftsuniversität Wien","address":"Welthandelsplatz 1","coords":[48.2333,16.4167]}
-  ],
-
-  "betriebsordnung": [
+  "II_betriebsordnung": [
     {"q":"Welche Personen dürfen im Fahrdienst tätig sein?","a":"Nur vertrauenswürdige Personen"},
     {"q":"Wem ist der Taxilenkerausweis auf Verlangen zur Überprüfung auszuhändigen?","a":"Organen des öffentlichen Sicherheitsdienstes"},
     {"q":"Wie verhalten Sie sich, wenn Sie den Taxilenkerausweis verloren haben?","a":"Unverzüglich Verlustanzeige machen"},
@@ -221,23 +203,38 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     {"q":"Was haben Sie als Taxilenker nach Dienstende zu tun?","a":"Prüfen ob Gegenstände im Fahrzeug zurückgeblieben sind"},
     {"q":"Was ist Fahrgästen bei Taxifahrten untersagt?","a":"Den Lenker behindern, Türen eigenmächtig öffnen, rauchen"},
     {"q":"Was verstehen Sie unter Beförderungspflicht?","a":"Die Pflicht, grundsätzlich jeden Fahrgast innerhalb Wiens zu befördern"},
-    {"q":"Welche Personen können Sie von der Beförderung ausschließen?","a":"Personen die Sicherheit gefährden, Betrunkene, Personen mit ansteckenden Krankheiten"}
+    {"q":"Welche Personen können Sie von der Beförderung ausschließen?","a":"Personen die Sicherheit gefährden, Betrunkene, Personen mit ansteckenden Krankheiten"},
+    {"q":"Welche Hunde müssen befördert werden?","a":"Alle Hunde, wenn sie nicht aggressiv oder stark verschmutzt sind"},
+    {"q":"Müssen Assistenzhunde einen Maulkorb tragen?","a":"Nein"},
+    {"q":"Wie lang muss ein Taxi-KFZ mindestens sein?","a":"4,2 Meter"},
+    {"q":"Welche Unterlagen müssen mitgeführt werden?","a":"Wiener Landesbetriebsordnung, Gewerberegisterauszug, Taxitarif"},
+    {"q":"Wie viel Wechselgeld müssen Sie mit sich führen?","a":"Ausreichend für einen 50-Euro-Schein"},
+    {"q":"Wann darf die Taxileuchte nicht beleuchtet sein?","a":"Wenn Fahrgäste befördert werden oder bei bestellten Fahrten"},
+    {"q":"Wo dürfen Sie Fahrgäste aufnehmen?","a":"Auf Taxistandplätzen, bei Bestellungen, an der Bestelladresse"},
+    {"q":"Dürfen Sie mit Ihrem Taxi umherfahren, um Fahrgäste zu gewinnen?","a":"Nein"},
+    {"q":"Wie haben sich Taxis auf den Standplätzen aufzustellen?","a":"Nach der Zeit ihrer Ankunft einreihen und platzsparend aufstellen"},
+    {"q":"Wer darf das Standplatztelefon bedienen?","a":"Der Lenker des ersten Taxis"}
   ],
 
-  "tarif": [
+  "III_tarif": [
     {"q":"Wie hoch ist die Grundtaxe am Tag?","a":"3,80 €"},
     {"q":"Wie hoch ist die Grundtaxe in der Nacht / an Sonn- und Feiertagen?","a":"4,30 €"},
     {"q":"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?","a":"34,80 €"},
     {"q":"Der Nachtzuschlag gilt von … bis … Uhr.","a":"23:00–06:00"},
     {"q":"Wie hoch ist die Streckentaxe für die ersten 5 Kilometer am Tag?","a":"0,95 Cent pro 210,53 Meter"},
+    {"q":"Wie hoch ist die Streckentaxe ab dem 5. Kilometer am Tag?","a":"0,58 Cent pro 344,83 Meter"},
     {"q":"Wie hoch ist ein Zuschlag für bestellte Fahrten?","a":"2 Euro"},
     {"q":"Wer verordnet den Wiener Taxitarif?","a":"Der Landeshauptmann (Bürgermeister)"},
     {"q":"Wo verliert der Wiener Taxitarif seine Gültigkeit?","a":"Ab der Ortsgrenze"},
     {"q":"Wie werden Botenfahrten verrechnet?","a":"Freie Vereinbarung oder laut Taxameter"},
-    {"q":"Welchen Steuersatz enthält eine Botenfahrt?","a":"20% MwSt"}
+    {"q":"Welchen Steuersatz enthält eine Botenfahrt?","a":"20% MwSt"},
+    {"q":"Wie hoch ist der Zuschlag bei der Beförderung von mehr als 4 Personen?","a":"2 Euro"},
+    {"q":"Was tun bei Versagen des Fahrpreisanzeigers während der Fahrt?","a":"Fahrgast sofort informieren, Fahrt fortsetzen, Preis basierend auf Tarif berechnen"},
+    {"q":"In welcher Zeitspanne gilt der Sonn- und Feiertagstarif?","a":"0:00 bis 24:00 Uhr"},
+    {"q":"Was sind bestellte Fahrten?","a":"Fahrten die im Voraus über Standplatztelefon, App oder andere Kommunikationsdienste gebucht werden"}
   ],
 
-  "strassenverkehr": [
+  "IV_strassenverkehr": [
     {"q":"Dürfen Taxis durch Wohnstraßen durchfahren?","a":"Nein, nur zu- und abfahren in Schrittgeschwindigkeit"},
     {"q":"Was ist ein Einsatzfahrzeug?","a":"Fahrzeug mit Blaulicht und Folgetonhorn"},
     {"q":"Wie verhalten Sie sich gegenüber einem Einsatzfahrzeug?","a":"Platz machen für Durchfahrt"},
@@ -247,45 +244,39 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
     {"q":"Dürfen Sie auf einer Vorrangstraße im Ortsgebiet links zufahren?","a":"Nein, außer in Einbahnstraßen"},
     {"q":"Was verstehen Sie unter dem Reißverschlusssystem?","a":"Wechselseitiges Einordnen lassen von Fahrzeugen an Engstellen"},
     {"q":"Dürfen Sie auf einem ungeregelten Schutzweg überholen?","a":"Nein"},
-    {"q":"Wie verhalten Sie sich vor einem Schutzweg?","a":"Geschwindigkeit so wählen, dass rechtzeitig angehalten werden kann"}
+    {"q":"Wie verhalten Sie sich vor einem Schutzweg?","a":"Geschwindigkeit so wählen, dass rechtzeitig angehalten werden kann"},
+    {"q":"Was bedeutet gelbes blinkendes Licht?","a":"Vorsicht"},
+    {"q":"Dürfen Taxis in Begegnungszonen einfahren?","a":"Ja"},
+    {"q":"Dürfen Sie die Rettungsgasse benutzen?","a":"Nein"},
+    {"q":"Was ist eine Rettungsgasse?","a":"Durchgängige Fahrmöglichkeit für Notfallfahrzeuge auf Autobahnen"},
+    {"q":"Wo muss eine Rettungsgasse gebildet werden?","a":"Auf Autobahnen und Schnellstraßen bei Stau"},
+    {"q":"Was ist der Vertrauensgrundsatz?","a":"Dass jeder Straßenbenützer darauf vertrauen darf, dass andere die Rechtsvorschriften befolgen"},
+    {"q":"Welche Personen sind vom Vertrauensgrundsatz ausgenommen?","a":"Kinder, Seh- oder Hörbehinderte, offensichtlich Gebrechliche"},
+    {"q":"Wie verhalten Sie sich beim Ausparken bei Beschädigung eines anderen KFZ?","a":"Polizei unverzüglich verständigen (Selbstanzeige)"},
+    {"q":"Dürfen Sie einen Mopedfahrer auf einer Eisenbahnkreuzung überholen?","a":"Nein"},
+    {"q":"Was verstehen Sie unter der freien Wahl des Fahrstreifens?","a":"Im Ortsgebiet bei mindestens zwei Fahrstreifen darf man den Fahrstreifen frei wählen"}
   ],
 
-  "guertel": [
+  "19_guertel": [
     {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den GÜRTEL überquert haben?","options":["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße"],"correct":"Sechshauser Straße"},
     {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den GÜRTEL überquert haben?","options":["Gablenzgasse","Thaliastraße","Mariahilfer Straße","Winckelmannstraße"],"correct":"Gablenzgasse"},
     {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Neustiftgasse über den GÜRTEL überquert haben?","options":["Koppstraße","Thaliastraße","Burggasse","Winckelmannstraße"],"correct":"Koppstraße"},
-    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Josefstädter Straße über den GÜRTEL überquert haben?","options":["Neulerchenfelder Straße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Neulerchenfelder Straße"}
-  ],
-
-  "donaukanal": [
-    {"name":"Donaukanal Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Aspernbrückengasse über den DONAUKANAL überquert haben?","options":["Franzensbrückenstraße","Taborstraße","Lassallestraße","Rotenturmstraße"],"correct":"Franzensbrückenstraße"},
-    {"name":"Donaukanal Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Taborstraße über den DONAUKANAL überquert haben?","options":["Rembrandtstraße","Franzensbrückenstraße","Lassallestraße","Rotenturmstraße"],"correct":"Rembrandtstraße"},
-    {"name":"Donaukanal Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Rotenturmstraße über den DONAUKANAL überquert haben?","options":["Laurenzerberg","Franzensbrückenstraße","Lassallestraße","Taborstraße"],"correct":"Laurenzerberg"}
-  ],
-
-  "arbeitsrecht": [
-    {"q":"Wie entsteht ein Arbeitsverhältnis?","a":"Durch einen Arbeitsvertrag zwischen Arbeitgeber und Arbeitnehmer"},
-    {"q":"Welche Pflichten haben Arbeitnehmer?","a":"Arbeitspflicht, Sorgfaltspflicht, Treuepflicht, Weisungspflicht"},
-    {"q":"Welche Pflichten haben Arbeitgeber?","a":"Anmeldepflicht, Fürsorgepflicht, Entgeltzahlungspflicht"},
-    {"q":"Was ist die Sozialversicherung?","a":"Pflichtversicherung für Kranken-, Unfall-, Pensions- und Arbeitslosenversicherung"},
-    {"q":"Wie hoch ist der kollektivvertragliche Mindestlohn im Taxigewerbe 2024?","a":"1.880 € brutto"},
-    {"q":"Wie lange darf die Arbeitszeit pro Tag höchstens sein?","a":"12 Stunden"},
-    {"q":"Wie lange muss die tägliche Ruhezeit sein?","a":"Mindestens 11 Stunden"},
-    {"q":"Wie lange sind die Kündigungsfristen in den ersten zwei Arbeitsjahren?","a":"6 Wochen"},
-    {"q":"Was gilt im Taxigewerbe als Nachtarbeit?","a":"Die Zeit zwischen 00:00 Uhr und 04:00 Uhr"},
-    {"q":"Wie hoch ist der Zuschlag bei der Überstundenentlohnung?","a":"50% Zuschlag"}
+    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Josefstädter Straße über den GÜRTEL überquert haben?","options":["Neulerchenfelder Straße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Neulerchenfelder Straße"},
+    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Alser Straße über den GÜRTEL überquert haben?","options":["Ottakringer Straße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Ottakringer Straße"},
+    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Währinger Straße über den GÜRTEL überquert haben?","options":["Gentzgasse","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Gentzgasse"},
+    {"name":"Gürtel Kreuzungen","question":"Wie heißt die Straße weiter, nachdem Sie die Nußdorfer Straße über den GÜRTEL überquert haben?","options":["Döblinger Hauptstraße","Thaliastraße","Burggasse","Lerchenfelder Straße"],"correct":"Döblinger Hauptstraße"}
   ]
 }
 </script>
 
 <script>
-/* ================= helpers ================= */
+// ================= ОСНОВНОЙ КОД =================
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const toast = (m,ms=1900)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
 function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
 
-/* ================= map ================= */
+// ================= KARTE =================
 let map=null;
 try{
   if(window.L){
@@ -295,7 +286,6 @@ try{
   }
 } catch(e){}
 let currentMarker = null;
-let currentPopup = null;
 
 function icon(status='blue', pulse=false){
   const sym = status==='green'?'✓':status==='red'?'✗':'•';
@@ -312,10 +302,6 @@ function clearMap() {
     if (currentMarker) {
         map.removeLayer(currentMarker);
         currentMarker = null;
-    }
-    if (currentPopup) {
-        map.removeLayer(currentPopup);
-        currentPopup = null;
     }
 }
 
@@ -342,7 +328,7 @@ function updateMarkerStatus(status, correctAnswer = null) {
     }
 }
 
-/* ================= Голосовые ответы ================= */
+// ================= SPRACHERKENNUNG =================
 let speechRecognition = null;
 let isListening = false;
 
@@ -363,15 +349,10 @@ function initSpeechRecognition() {
         
         speechRecognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            console.log("Erkannt:", transcript);
             processVoiceAnswer(transcript);
         };
         
         speechRecognition.onerror = (event) => {
-            console.warn("Spracherkennungsfehler", event.error);
-            if (event.error === 'not-allowed') {
-                toast("Erlauben Sie Mikrofonzugriff in den Browsereinstellungen");
-            }
             stopVoiceRecognition();
         };
         
@@ -379,18 +360,13 @@ function initSpeechRecognition() {
             stopVoiceRecognition();
         };
     } else {
-        console.warn("Spracherkennung nicht unterstützt");
         $("#voiceBtn").style.display = "none";
         $("#voiceQuizBtn").style.display = "none";
     }
 }
 
 function startVoiceRecognition() {
-    if (!speechRecognition) {
-        toast("Spracherkennung wird in Ihrem Browser nicht unterstützt");
-        return;
-    }
-    
+    if (!speechRecognition) return;
     if (isListening) {
         stopVoiceRecognition();
         return;
@@ -398,9 +374,8 @@ function startVoiceRecognition() {
     
     try {
         speechRecognition.start();
-        toast("Höre zu... Sagen Sie die Antwortnummer (1,2,3,4)");
+        toast("Höre zu... Sagen Sie die Antwortnummer");
     } catch (error) {
-        console.warn("Spracherkennungsstartfehler:", error);
         toast("Fehler beim Mikrofonzugriff");
     }
 }
@@ -416,39 +391,30 @@ function stopVoiceRecognition() {
 
 function processVoiceAnswer(transcript) {
     const cleanAnswer = transcript.trim().toLowerCase();
-    console.log("Verarbeite Antwort:", cleanAnswer);
-    
     const options = $$("#optionsContainer .option");
     
-    // Suche nach Nummer (1,2,3,4)
     const numberMatch = cleanAnswer.match(/(\d)/);
     if (numberMatch && options[numberMatch[1] - 1]) {
         const selectedOption = options[numberMatch[1] - 1];
-        const optionText = selectedOption.textContent.replace(/^\d+\.\s*/, "");
         selectedOption.click();
-        speak(`Gewählt: ${numberMatch[1]} - ${optionText}`, 0.7);
         return;
     }
     
-    // Suche nach Antworttext
     for (let i = 0; i < options.length; i++) {
         const optionText = options[i].textContent.toLowerCase().replace(/^\d+\.\s*/, "");
         if (cleanAnswer.includes(optionText) || optionText.includes(cleanAnswer)) {
             options[i].click();
-            speak(`Sie sagten: ${optionText}`, 0.7);
             return;
         }
     }
     
-    // Wenn keine Übereinstimmung gefunden
-    speak("Antwort nicht verstanden. Bitte sagen Sie die Antwortnummer: 1, 2, 3 oder 4.", 0.7);
-    toast(`Nicht erkannt: "${transcript}". Sagen Sie die Antwortnummer.`);
+    speak("Antwort nicht verstanden. Bitte sagen Sie die Antwortnummer.", 0.7);
 }
 
-/* ================= TTS mit männlicher Stimme ================= */
+// ================= SPRACHAUSGABE - MÄNNLICHE STIMME =================
 let ttsOn=true;
-const DEFAULT_RATE = 1.0;  // Normale Geschwindigkeit
-const SLOW_RATE = 0.7;     // Langsamer
+const DEFAULT_RATE = 0.8;  // Langsamer für besseres Verständnis
+const SLOW_RATE = 0.5;     // Noch langsamer
 
 function speak(text, rate=DEFAULT_RATE){
   if(!ttsOn || !text) return;
@@ -459,43 +425,23 @@ function speak(text, rate=DEFAULT_RATE){
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "de-DE";
   u.rate = rate;
-  
-  // Versuche männliche Stimme zu finden
-  const voices = window.speechSynthesis.getVoices();
-  const maleVoice = voices.find(voice => 
-    voice.lang === 'de-DE' && 
-    (voice.name.includes('Google Deutsch') || 
-     voice.name.includes('Microsoft David') ||
-     voice.name.toLowerCase().includes('male'))
-  );
-  
-  if (maleVoice) {
-    u.voice = maleVoice;
-  }
+  u.pitch = 0.8;  // Tiefer für männliche Stimme
   
   window.speechSynthesis.speak(u);
 }
 
-/* ================= Daten ================= */
+// ================= DATEN =================
 const PACK = JSON.parse(document.getElementById('data-pack').textContent);
 
 const THEMEN = [
-  {key:"regierungs", title:"I. Ortskunde - Regierungsgebäude", pages:"S.6", official:16},
-  {key:"gerichte", title:"I. Ortskunde - Gerichtsgebäude", pages:"S.6-7", official:8},
-  {key:"polizei", title:"I. Ortskunde - Polizeidienststellen", pages:"S.7", official:2},
-  {key:"stadtpolizei", title:"I. Ortskunde - Stadtpolizeikommanden", pages:"S.7-10", official:3},
-  {key:"hotels", title:"I. Ortskunde - Hotels", pages:"S.10-13", official:4},
-  {key:"cafes", title:"I. Ortskunde - Kaffeehäuser", pages:"S.14", official:4},
-  {key:"krankenhaus", title:"I. Ortskunde - Krankenanstalten", pages:"S.17-19", official:3},
-  {key:"kultur", title:"I. Ortskunde - Kultureinrichtungen", pages:"S.19", official:4},
-  {key:"museen", title:"I. Ortskunde - Museen", pages:"S.20-22", official:4},
-  {key:"universitäten", title:"I. Ortskunde - Universitäten", pages:"S.20", official:3},
-  {key:"guertel", title:"I. Ortskunde - Gürtel Kreuzungen", pages:"S.23", official:4},
-  {key:"donaukanal", title:"I. Ortskunde - Donaukanal Kreuzungen", pages:"S.24", official:3},
-  {key:"betriebsordnung", title:"II. Betriebsordnung", pages:"S.39-56", official:10},
-  {key:"tarif", title:"III. Wiener Tarif", pages:"S.58-61", official:10},
-  {key:"strassenverkehr", title:"IV. Straßenverkehrsordnung", pages:"S.62-75", official:10},
-  {key:"arbeitsrecht", title:"VI. Arbeits- und Sozialrecht", pages:"S.78-89", official:10}
+  {key:"1_regierungs", title:"I.1) Regierungsgebäude", pages:"S.6", official:16},
+  {key:"2_gerichte", title:"I.2) Gerichtsgebäude", pages:"S.6-7", official:8},
+  {key:"3_polizei", title:"I.3) Bundespolizei", pages:"S.7", official:3},
+  {key:"4_stadtpolizei", title:"I.4) Stadtpolizeikommanden", pages:"S.7-10", official:14},
+  {key:"II_betriebsordnung", title:"II) Betriebsordnung", pages:"S.39-56", official:20},
+  {key:"III_tarif", title:"III) Wiener Tarif", pages:"S.58-61", official:15},
+  {key:"IV_strassenverkehr", title:"IV) Straßenverkehrsordnung", pages:"S.62-75", official:20},
+  {key:"19_guertel", title:"I.19) Gürtel Kreuzungen", pages:"S.23", official:7}
 ];
 
 function buildQuestionsFromPack(){
@@ -507,13 +453,10 @@ function buildQuestionsFromPack(){
       const q = it.question || `Wo befindet sich ${it.name}?`;
       const right = it.a || it.address;
       
-      // Für Fragen ohne vordefinierte Distraktoren, erstelle welche
       let distractors = it.distractors;
       if (!distractors && it.a) {
-        // Für Textfragen: nimm andere Antworten aus derselben Kategorie
         distractors = shuffle(items.filter(o => o.a && o.a !== right).map(o => o.a)).slice(0, 3);
       } else if (!distractors) {
-        // Für Ortsfragen: nimm andere Adressen
         distractors = shuffle(items.filter(o => o.address && o.address !== right).map(o => o.address)).slice(0, 3);
       }
       
@@ -533,8 +476,8 @@ function buildQuestionsFromPack(){
 }
 const DATA = buildQuestionsFromPack();
 
-/* ================= Quiz engine ================= */
-let selected=[], pool=[], idx=0, score=0, examMode=false, officialMode=false;
+// ================= QUIZ ENGINE =================
+let selected=[], pool=[], idx=0, score=0, examMode=false;
 let lastQuestionText="";
 let currentQuestion = null;
 
@@ -542,7 +485,8 @@ function availableCount(key){ return (DATA[key]||[]).length; }
 function buildPool(keys){ const out=[]; keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); }); return shuffle(out); }
 
 function openQuiz(){
-  $("#quizPanel").style.display="block"; $("#sidebar").style.display="none";
+  $("#quizPanel").style.display="block"; 
+  $("#sidebar").style.display="none";
 }
 
 async function showQuestion(first=false){
@@ -565,9 +509,9 @@ async function showQuestion(first=false){
     d.onkeydown=(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } };
     cont.appendChild(d);
   });
-  $("#nextBtn").style.display="none"; $("#endBtns").style.display="none";
+  $("#nextBtn").style.display="none"; 
+  $("#endBtns").style.display="none";
 
-  // ZEIGE MARKIERUNG BEI FRAGE
   if (q.coords) {
     showLocationOnMap(q.coords, q.name || q.q, q.address || q.correct, 'blue');
   } else {
@@ -592,7 +536,6 @@ async function checkAnswer(el,opt){
   
   if(right) score++;
 
-  // AKTUALISIERE MARKIERUNG MIT RICHTIGER ANTWORT
   if (q.coords) {
     updateMarkerStatus(right ? 'green' : 'red', q.address || q.correct);
   }
@@ -612,8 +555,11 @@ function nextQuestion(){
     showQuestion(); 
   } else {
     $("#questionText").textContent=`Fertig! Punkte: ${score}/${pool.length}`;
-    $("#optionsContainer").innerHTML=""; $("#progress").textContent=""; $("#progressFill").style.width="100%";
-    $("#nextBtn").style.display="none"; $("#endBtns").style.display="block"; 
+    $("#optionsContainer").innerHTML=""; 
+    $("#progress").textContent=""; 
+    $("#progressFill").style.width="100%";
+    $("#nextBtn").style.display="none"; 
+    $("#endBtns").style.display="block"; 
     clearMap();
     speak(`Prüfung beendet. Sie haben ${score} von ${pool.length} Fragen richtig beantwortet.`, DEFAULT_RATE);
   }
@@ -636,10 +582,12 @@ function restartQuiz(){
 async function startQuiz(mode="normal"){
   const checked=$$("#catList input[type=checkbox]:checked").map(x=>x.value);
   if(checked.length===0){ toast("Bitte wählen Sie mindestens eine Kategorie!"); return; }
-  selected=checked; examMode=(mode==="exam"); officialMode=false;
+  selected=checked; 
+  examMode=(mode==="exam"); 
   pool=buildPool(selected);
   if(examMode && pool.length>10) pool=pool.slice(0,10);
-  idx=0; score=0; openQuiz();
+  idx=0; score=0; 
+  openQuiz();
   await showQuestion(true);
 }
 
@@ -647,13 +595,15 @@ function startVoiceQuiz() {
     startQuiz("normal");
 }
 
-/* ================= UI Events ================= */
+// ================= UI EVENTS =================
 function loadCats(){
   const wrap=$("#catList"); wrap.innerHTML="";
   THEMEN.forEach(t=>{
-    const have=availableCount(t.key); const need=t.official||have;
-    const div=document.createElement("label"); div.className="cat";
-    div.innerHTML=`<input type="checkbox" value="${t.key}" ${["regierungs","gerichte","tarif"].includes(t.key) ? "checked" : ""}> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="meta">${have}/${need}</span>`;
+    const have=availableCount(t.key); 
+    const need=t.official||have;
+    const div=document.createElement("label"); 
+    div.className="cat";
+    div.innerHTML=`<input type="checkbox" value="${t.key}" ${["1_regierungs","2_gerichte","III_tarif"].includes(t.key) ? "checked" : ""}> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="meta">${have}/${need}</span>`;
     wrap.appendChild(div);
   });
 }
@@ -663,15 +613,12 @@ window.addEventListener("load", ()=>{
     loadCats();
     initSpeechRecognition();
     toast("Wiener Taxi Prüfungsassistent geladen");
-    
-    // Stimmen laden für TTS
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-    }
 });
 
 // Event-Handler
-$("#menuBtn").onclick = ()=>{ $("#sidebar").style.display = $("#sidebar").style.display==="none"?"block":"none"; };
+$("#menuBtn").onclick = ()=>{ 
+  $("#sidebar").style.display = $("#sidebar").style.display==="none"?"block":"none"; 
+};
 $("#startBtn").onclick = ()=>{ startQuiz("normal"); };
 $("#examBtn").onclick  = ()=>{ startQuiz("exam"); };
 $("#officialBtn").onclick = ()=>{ startQuiz("official"); };
@@ -692,7 +639,6 @@ document.addEventListener("keydown",(e)=>{
   if(e.key==="Enter" && getComputedStyle($("#nextBtn")).display!=="none") nextQuestion();
 });
 
-// Vereinfachte Anwendung - kein Login benötigt
 $("#sidebar").style.display = "block";
 </script>
 </body>
