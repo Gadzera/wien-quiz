@@ -30,11 +30,11 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 
 .topbar{
   position:fixed; top:12px; left:12px; right:12px; z-index:1001;
-  display:flex; gap:8px; align-items:center; justify-content:space-between;
+  display:flex; gap:8px; align-items:center; justify-content:flex-start; /* Изменено на flex-start */
   pointer-events:none;
 }
 .btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
-      color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
+      color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); margin-right:auto; /* Добавлено */ }
 .btn.secondary{ background:#334155; }
 .iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.9; cursor:pointer; }
 .iconbtn:hover{ opacity:1; }
@@ -203,7 +203,7 @@ function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=M
 // ============ Map ============
 const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
-let answerMarker=null, gLayer=null;
+let answerMarker=null, gLayer=null, questionMarker=null;
 function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
 
 // Geo helpers (для рисования перекрёстков)
@@ -435,6 +435,12 @@ function startQuiz(mode="normal"){
 }
 function showQuestion(first=false){
   const q = pool[idx]; if(!q) return;
+  
+  // Очищаем предыдущие маркеры
+  if(questionMarker){ map.removeLayer(questionMarker); questionMarker=null; }
+  if(answerMarker){ map.removeLayer(answerMarker); answerMarker=null; }
+  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
+  
   $("#progress").textContent=`Frage ${idx+1} von ${pool.length}`;
   $("#progressFill").style.width = `${Math.round((idx)/pool.length*100)}%`;
   $("#questionText").textContent=q.question;
@@ -449,10 +455,29 @@ function showQuestion(first=false){
   });
   $("#nextBtn").style.display="none";
   $("#endBtns").style.display="none";
+  
+  // ПОКАЗЫВАЕМ МЕТКУ ЗДАНИЯ ПРИ ВОПРОСЕ
+  if(Array.isArray(q.coords)){
+    questionMarker = L.marker(q.coords)
+      .addTo(map)
+      .bindPopup(`<b>${q.name}</b><br>📍 Aktuelle Frage`)
+      .openPopup();
+    fly(q.coords, 16);
+  }
+  
   // Озвучка
   speak(`${q.name}. ${q.question}`);
+  
   // Если это Gürtel-вопрос с визуализацией — нарисуем перекрёсток
-  if(q.viz){ drawIntersection({coords:q.viz.coords, bearing:q.viz.bearing, side:q.viz.side, nameA:q.viz.nameA||"Gürtel", nameB:q.viz.nameB||"Straße"}); }
+  if(q.viz){ 
+    drawIntersection({
+      coords:q.viz.coords, 
+      bearing:q.viz.bearing, 
+      side:q.viz.side, 
+      nameA:q.viz.nameA||"Gürtel", 
+      nameB:q.viz.nameB||"Straße"
+    }); 
+  }
 }
 function checkAnswer(el,opt){
   const q=pool[idx];
@@ -462,8 +487,14 @@ function checkAnswer(el,opt){
   if(!ok){ const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); if(r) r.classList.add("correct"); }
   if(ok) score++;
 
-  if(answerMarker){ map.removeLayer(answerMarker); answerMarker=null; }
-  if(Array.isArray(q.coords)){ fly(q.coords,16); answerMarker=L.marker(q.coords).addTo(map).bindPopup(`<b>${q.name}</b><br>${q.correct}`).openPopup(); }
+  // Убираем маркер вопроса и показываем маркер ответа
+  if(questionMarker){ map.removeLayer(questionMarker); questionMarker=null; }
+  if(Array.isArray(q.coords)){
+    answerMarker = L.marker(q.coords)
+      .addTo(map)
+      .bindPopup(`<b>${q.name}</b><br>${q.correct}`)
+      .openPopup();
+  }
 
   speak(ok ? "Richtig. Gut gemacht." : `Leider falsch. Richtig ist: ${q.correct}.`);
   $("#nextBtn").style.display="block";
@@ -484,8 +515,20 @@ function nextQuestion(){
     saveSession();
   }
 }
-function backToMenu(){ $("#quizPanel").style.display="none"; $("#sidebar").style.display="block"; $("#endBtns").style.display="none"; }
-function restartQuiz(){ $("#endBtns").style.display="none"; idx=0; score=0; pool=shuffle(pool); showQuestion(true); }
+function backToMenu(){ 
+  $("#quizPanel").style.display="none"; 
+  $("#sidebar").style.display="block"; 
+  $("#endBtns").style.display="none"; 
+  // Очищаем все маркеры при возврате в меню
+  if(questionMarker){ map.removeLayer(questionMarker); questionMarker=null; }
+  if(answerMarker){ map.removeLayer(answerMarker); answerMarker=null; }
+  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
+}
+function restartQuiz(){ 
+  $("#endBtns").style.display="none"; 
+  idx=0; score=0; pool=shuffle(pool); 
+  showQuestion(true); 
+}
 function detectCat(q){
   for(const k of Object.keys(DATA)) if(DATA[k].includes(q)) return k;
   return "misc";
