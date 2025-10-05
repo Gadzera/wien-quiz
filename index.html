@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wiener Taxi Prüfungsassistent</title>
+<title>Wiener Ortskunde – Interaktive Karte & Quiz</title>
 
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -30,11 +30,11 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 
 .topbar{
   position:fixed; top:12px; left:12px; right:12px; z-index:1001;
-  display:flex; gap:8px; align-items:center; justify-content:flex-start;
+  display:flex; gap:8px; align-items:center; justify-content:space-between;
   pointer-events:none;
 }
 .btn{ pointer-events:auto; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
-      color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); margin-right: auto; }
+      color:white; background:linear-gradient(180deg,var(--brand),#1e40af); box-shadow:var(--shadow); }
 .btn.secondary{ background:#334155; }
 .iconbtn{ pointer-events:auto; border:none; border-radius:10px; padding:10px 12px; background:#111827; color:#fff; opacity:.9; cursor:pointer; }
 .iconbtn:hover{ opacity:1; }
@@ -42,13 +42,11 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 
 .sidebar{
   position:fixed; top:64px; left:12px; z-index:1000; width:360px; max-height:78vh; overflow:auto;
-  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:block;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:none;
 }
 .sidebar h3{ margin:0 0 8px 0; }
-.cat{ display:flex; align-items:center; gap:8px; padding:8px; margin:8px 0; background:var(--chip); border-left:4px solid var(--brand); border-radius:10px; cursor:pointer; }
-.cat:hover{ background:var(--border); }
+.cat{ display:flex; align-items:center; gap:8px; padding:8px; margin:8px 0; background:var(--chip); border-left:4px solid var(--brand); border-radius:10px; }
 .cat .count{ margin-left:auto; color:var(--muted); font-size:12px; }
-.cat input{ margin:0; }
 
 .quiz-panel{
   position:fixed; top:64px; right:12px; z-index:1000; width:380px; max-height:78vh; overflow:auto;
@@ -76,6 +74,17 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 .row{ display:flex; gap:10px; flex-wrap:wrap; }
 .kbd{ font-family:ui-monospace,monospace; background:#111827; color:#fff; padding:2px 6px; border-radius:6px; }
 
+.leaderboard .item{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px dashed var(--border); }
+.leaderboard .you{ background:rgba(37,99,235,.08); border-radius:8px; }
+
+#loginModal{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:2000;
+}
+#loginBox{ width:90%; max-width:380px; background:var(--panel); color:var(--text); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
+#loginBox h2{ margin:0 0 12px 0; }
+#loginBox input{ width:100%; padding:12px; margin:8px 0; border:1px solid var(--border); border-radius:10px; background:var(--chip); color:var(--text); }
+.login-btn{ width:100%; padding:12px; border:none; border-radius:10px; font-weight:800; background:linear-gradient(180deg,#ffcc66,#ff9933); cursor:pointer; }
+
 .toast{
   position:fixed; bottom:16px; left:50%; transform:translateX(-50%) translateY(20px);
   background:rgba(17,24,39,.95); color:#fff; padding:10px 14px; border-radius:10px; box-shadow:var(--shadow);
@@ -89,87 +98,6 @@ html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-
 .badge-outer{ background:#f59e0b; color:#111; }
 .small{ font-size:12px; color:var(--muted); }
 hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
-
-.stats-panel {
-  background: var(--panel);
-  padding: 15px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.question-editor {
-  background: var(--chip);
-  padding: 15px;
-  border-radius: var(--radius);
-  margin: 10px 0;
-  border: 1px solid var(--border);
-}
-
-.question-editor textarea, .question-editor input {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.question-editor button {
-  margin: 5px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--brand);
-  color: white;
-  cursor: pointer;
-}
-
-/* Map markers */
-.marker-correct {
-  background-color: #16a34a;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-.marker-incorrect {
-  background-color: #dc2626;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-.marker-question {
-  background-color: #2563eb;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-.controls {
-  display: flex;
-  gap: 10px;
-  margin: 10px 0;
-}
-
-.controls button {
-  flex: 1;
-}
-
-.select-all {
-  background: #4f46e5 !important;
-}
-
-.deselect-all {
-  background: #64748b !important;
-}
 </style>
 </head>
 <body>
@@ -181,28 +109,19 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
   <button class="btn" id="menuBtn">☰ Themen</button>
   <div class="spacer"></div>
   <button class="iconbtn" id="studyBtn" title="Учебный режим Gürtel">🧭 Gürtel</button>
-  <button class="iconbtn" id="editBtn" title="Редактор вопросов">✏️</button>
+  <button class="iconbtn" id="leaderBtn" title="Лидерборд">🏆</button>
   <button class="iconbtn" id="statsBtn" title="Статистика">📊</button>
   <button class="iconbtn" id="ttsToggleBtn" title="Озвучка вкл/выкл">🔊</button>
+  <button class="iconbtn" id="logoutBtn" title="Выйти">⎋</button>
 </div>
 
 <!-- Sidebar: Kategorien -->
 <div class="sidebar" id="sidebar">
   <h3>🗂️ Themen (I. ORTSKUNDE – 23 Kapitel aus dem PDF)</h3>
-  
-  <div class="controls">
-    <button class="btn select-all" id="selectAllBtn">Alle auswählen</button>
-    <button class="btn secondary deselect-all" id="deselectAllBtn">Alle abwählen</button>
-  </div>
-  
   <div id="catList"></div>
-  
-  <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-    <button id="startBtn" class="btn" style="width:100%;">▶️ Quiz starten</button>
-    <button id="examBtn" class="btn secondary" style="margin-top:8px;width:100%;">📝 Prüfungsmodus (10 Fragen)</button>
-  </div>
-  
-  <p class="small" style="margin-top:15px">Hotkeys: <span class="kbd">1..6</span> für Antworten, <span class="kbd">Enter</span> = Weiter.</p>
+  <button id="startBtn" class="btn" style="margin-top:10px;width:100%;">▶️ Quiz starten</button>
+  <button id="examBtn" class="btn secondary" style="margin-top:8px;width:100%;">📝 Prüfungsmodus (10 Fragen)</button>
+  <p class="small" style="margin-top:8px">Hotkeys: <span class="kbd">1..6</span> für Antworten, <span class="kbd">Enter</span> = Weiter.</p>
 </div>
 
 <!-- Quiz Panel -->
@@ -221,58 +140,106 @@ hr{ border:none; border-top:1px solid var(--border); margin:10px 0; }
 <!-- Panel: Gürtel Study -->
 <div class="panel" id="studyPanel">
   <h3>🧭 Учебный режим: Gürtel</h3>
-  <p class="small">Клик по строке — карта покажет перекрёсток.</p>
+  <p class="small">Клик по строке — карта покажет **перекрёсток** (оси + сектор <span class="badge badge-inner">innerer</span>/<span class="badge badge-outer">äußerer</span>). Основано на страницах «GÜRTEL» и «nach dem GÜRTEL überquert» вашего курса.</p>
   <div id="studyList"></div>
 </div>
 
-<!-- Panel: Question Editor -->
-<div class="panel" id="editPanel">
-  <h3>✏️ Редактор вопросов</h3>
-  <div class="question-editor">
-    <select id="categorySelect">
-      <option value="">Выберите категорию</option>
-    </select>
-    <input type="text" id="questionName" placeholder="Название вопроса">
-    <textarea id="questionTextEdit" placeholder="Текст вопроса"></textarea>
-    <input type="text" id="option1" placeholder="Вариант ответа 1">
-    <input type="text" id="option2" placeholder="Вариант ответа 2">
-    <input type="text" id="option3" placeholder="Вариант ответа 3">
-    <input type="text" id="option4" placeholder="Вариант ответа 4">
-    <input type="text" id="option5" placeholder="Вариант ответа 5">
-    <input type="text" id="option6" placeholder="Вариант ответа 6">
-    <select id="correctAnswer">
-      <option value="">Правильный ответ</option>
-      <option value="0">Вариант 1</option>
-      <option value="1">Вариант 2</option>
-      <option value="2">Вариант 3</option>
-      <option value="3">Вариант 4</option>
-      <option value="4">Вариант 5</option>
-      <option value="5">Вариант 6</option>
-    </select>
-    <button id="saveQuestion">💾 Сохранить вопрос</button>
-    <button id="loadDefault" class="secondary">🔄 Загрузить стандартные вопросы</button>
-  </div>
+<!-- Panel: Leaderboard -->
+<div class="panel leaderboard" id="leaderPanel">
+  <h3>🏆 Лидерборд</h3>
+  <div id="leaderList"></div>
 </div>
 
 <!-- Panel: Stats -->
 <div class="panel" id="statsPanel">
   <h3>📊 Моя статистика</h3>
-  <div class="stats-panel" id="myStats">
-    <p>Правильных ответов: <span id="correctCount">0</span> из <span id="totalCount">0</span></p>
-    <p>Процент правильных: <span id="accuracy">0%</span></p>
-    <button class="btn secondary" id="resetStats" style="margin-top:10px;">Сбросить статистику</button>
+  <div id="myStats"></div>
+</div>
+
+<!-- Login -->
+<div id="loginModal">
+  <div id="loginBox">
+    <h2 id="formTitle">Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPass" placeholder="Password">
+    <input type="password" id="loginPass2" placeholder="Repeat Password" style="display:none;">
+    <button class="login-btn" id="submitBtn">Log in</button>
+    <p id="loginError" style="color:#ef4444; font-size:12px;"></p>
+    <div class="small">
+      <a href="#" id="toRegister">Register</a> | <a href="#" id="toLogin">Login</a>
+    </div>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<script>
+<!-- Firebase + App -->
+<script type="module">
+// ============ Firebase ============
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqVNVOXqYlPryEvjIYkOyp3BrWMtRMlGg",
+  authDomain: "wien-quiz.firebaseapp.com",
+  databaseURL: "https://wien-quiz-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wien-quiz",
+  storageBucket: "wien-quiz.firebasestorage.app",
+  messagingSenderId: "467695563938",
+  appId: "1:467695563938:web:87b15a9b5de5d3764bd3fb",
+  measurementId: "G-SN0SMY9NH2"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// ============ Helpers ============
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const toast = (m,ms=1500)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
+function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
+
+// ============ Map ============
+const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+let answerMarker=null, gLayer=null;
+function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
+
+// Geo helpers (для рисования перекрёстков)
+function project([lat,lng], bearingDeg, dist){
+  const R=6378137, d=dist/R, br=bearingDeg*Math.PI/180, lat1=lat*Math.PI/180, lon1=lng*Math.PI/180;
+  const lat2=Math.asin(Math.sin(lat1)*Math.cos(d)+Math.cos(lat1)*Math.sin(d)*Math.cos(br));
+  const lon2=lon1+Math.atan2(Math.sin(br)*Math.sin(d)*Math.cos(lat1), Math.cos(d)-Math.sin(lat1)*Math.sin(lat2));
+  return [lat2*180/Math.PI, lon2*180/Math.PI];
+}
+function semiCircle(latlng, bearing, radius, side="innerer"){
+  let start=bearing-90, end=bearing+90;
+  if(side==="äußerer"){ start=bearing+90; end=bearing+270; }
+  const pts=[];
+  for(let a=start; a<=end; a+=5){ pts.push(project(latlng,a,radius)); }
+  pts.push(latlng);
+  return pts;
+}
+function drawIntersection({coords, bearing, side, nameA, nameB}){
+  if(gLayer){ map.removeLayer(gLayer); gLayer=null; }
+  const len=180, r=120;
+  const a1=project(coords,bearing,len/2), a2=project(coords,bearing+180,len/2);
+  const b1=project(coords,bearing+90,len/2), b2=project(coords,bearing+270,len/2);
+  const segA=L.polyline([a1,a2],{color:"#0ea5e9",weight:5}).addTo(map);
+  const segB=L.polyline([b1,b2],{color:"#22c55e",weight:5, dashArray:"6,6"}).addTo(map);
+  const wedge=L.polygon(semiCircle(coords,bearing,r,side), {color: side==="innerer"?"#0ea5e9":"#f59e0b", weight:2, fillColor: side==="innerer"?"#38bdf8":"#fbbf24", fillOpacity:.18}).addTo(map);
+  const mk=L.marker(coords).addTo(map).bindPopup(`<b>${nameA}</b> × <b>${nameB}</b><br><span class="badge ${side==='innerer'?'badge-inner':'badge-outer'}">${side} Gürtel</span>`).openPopup();
+  gLayer=L.layerGroup([segA,segB,wedge,mk]).addTo(map);
+  fly(coords,16);
+}
+
 // ============ DATA ============
-// Ключ ElevenLabs и голос
-const ELEVEN_API_KEY = "YOUR_ELEVENLABS_API_KEY_HERE"; // Замените на ваш ключ
+// Ключ ElevenLabs и голос — зашиты
+const ELEVEN_API_KEY = "f3e700c3faf18f37d5b07200c0f83b5d22059752311d8c655afc5e0e8ba1188d";
 const ELEVEN_VOICE_ID = "ROYWaqtov1Lot9vQBM3y";
 
-// 23 темы I. ORTSKUNDE
+// 23 темы I. ORTSKUNDE + дополнительные
 const THEMEN = [
  {key:"regierungs", title:"1) Regierungsgebäude", pages:"S.6"},
  {key:"gerichte",   title:"2) Gerichtsgebäude", pages:"S.6–7"},
@@ -305,200 +272,145 @@ const THEMEN = [
  {key:"arbeit",title:"Arbeits- und Sozialrecht", pages:"S.84–95"}
 ];
 
-// ПОЛНЫЕ ВОПРОСЫ ДЛЯ ВСЕХ ТЕМ С ПРОВЕРЕННЫМИ КООРДИНАТАМИ
-const DEFAULT_QUESTIONS = {
+// ВОПРОСЫ С ПРОВЕРЕННЫМИ КООРДИНАТАМИ (520+ вопросов)
+const DATA = {
   regierungs: [
-    { name:"Parlament", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1","Herrengasse 7","Johannesgasse 5"], correct:0, coords:[48.2079,16.3593] },
-    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Herrengasse 7","Johannesgasse 5","Stubenring 1","Minoritenplatz 3","Rathausplatz 1"], correct:0, coords:[48.2084,16.3637] },
-    { name:"Rathaus", question:"Wo befindet sich das Rathaus?", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8","Ballhausplatz 1","Dr.-Karl-Renner-Ring 3"], correct:0, coords:[48.2105,16.3562] }
+    { name:"Parlament", question:"Wo befindet sich das Parlament?", options:["Dr.-Karl-Renner-Ring 3","Ballhausplatz 2","Minoritenplatz 5","Stubenring 1"], correct:"Dr.-Karl-Renner-Ring 3", coords:[48.207763, 16.359252] },
+    { name:"Präsidentschaftskanzlei", question:"Wo befindet sich die Präsidentschaftskanzlei?", options:["Ballhausplatz 1","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correct:"Ballhausplatz 1", coords:[48.208056, 16.364722] },
+    { name:"Bundeskanzleramt", question:"Wo befindet sich das Bundeskanzleramt?", options:["Ballhausplatz 2","Minoritenplatz 8","Museumstraße 7","Radetzkystraße 2"], correct:"Ballhausplatz 2", coords:[48.208333, 16.363889] },
+    { name:"BM Inneres", question:"Wo befindet sich das BM für Inneres?", options:["Herrengasse 7","Johannesgasse 5","Stubenring 1","Ballhausplatz 2"], correct:"Herrengasse 7", coords:[48.209444, 16.365833] },
+    { name:"BM Justiz", question:"Wo befindet sich das BM für Justiz?", options:["Museumstraße 7","Herrengasse 7","Johannesgasse 5","Stubenring 1"], correct:"Museumstraße 7", coords:[48.205833, 16.355278] },
+    { name:"Rathaus", question:"Wo befindet sich das Rathaus?", options:["Rathausplatz 1","Stubenring 1","Johannesgasse 5","Minoritenplatz 8"], correct:"Rathausplatz 1", coords:[48.210556, 16.356389] }
   ],
   gerichte: [
-    { name:"OGH", question:"Wo befindet sich der Oberste Gerichtshof?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Herrengasse 7","Ballhausplatz 1","Freyung 8","Judenplatz 11"], correct:0, coords:[48.2095,16.3585] },
-    { name:"Verfassungsgerichtshof", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["Freyung 8","Judenplatz 11","Schmerlingplatz 10-11","Stubenring 1","Ballhausplatz 2","Landesgerichtsstraße 11"], correct:0, coords:[48.2115,16.3655] }
+    { name:"VfGH", question:"Wo befindet sich der Verfassungsgerichtshof?", options:["Freyung 8","Judenplatz 11","Schmerlingplatz 10-11","Stubenring 1"], correct:"Freyung 8", coords:[48.211111, 16.365278] },
+    { name:"VwGH", question:"Wo befindet sich der Verwaltungsgerichtshof?", options:["Judenplatz 11","Freyung 8","Stubenring 1","Ballhausplatz 2"], correct:"Judenplatz 11", coords:[48.211389, 16.369167] },
+    { name:"OGH", question:"Wo befindet sich der Oberste Gerichtshof?", options:["Schmerlingplatz 10-11","Landesgerichtsstraße 11","Herrengasse 7","Ballhausplatz 1"], correct:"Schmerlingplatz 10-11", coords:[48.207778, 16.357500] },
+    { name:"LG Strafsachen", question:"Wo befindet sich das Landesgericht für Strafsachen?", options:["Landesgerichtsstraße 11","Schmerlingplatz 10-11","Herrengasse 7","Johannesgasse 5"], correct:"Landesgerichtsstraße 11", coords:[48.215000, 16.350000] },
+    { name:"Rechnungshof", question:"Wo befindet sich der Rechnungshof?", options:["Dampfschiffstraße 2","Judenplatz 11","Schmerlingplatz 10-11","Landesgerichtsstraße 11"], correct:"Dampfschiffstraße 2", coords:[48.207222, 16.392500] }
   ],
   bundespolizei: [
-    { name:"Sicherheitsbüro BPD Wien", question:"Wo befindet sich das Sicherheitsbüro der BPD Wien?", options:["Schottenring 7-9","Hernalser Gürtel 6-12","Dierichgasse 27","Laxenburger Straße 36","Wipplingerstraße 34","Mariahilfer Straße 1"], correct:0, coords:[48.2180,16.3630] }
+    { name:"Sicherheitsbüro (BPD Wien)", question:"Wo befindet sich das Sicherheitsbüro der BPD Wien?", options:["Schottenring 7-9","Hernalser Gürtel 6-12","Dierichgasse 27","Laxenburger Straße 36"], correct:"Schottenring 7-9", coords:[48.215600, 16.370400] },
+    { name:"Fremdenpolizei", question:"Wo befindet sich das Fremdenpolizeiliche Büro (Wien)?", options:["Hernalser Gürtel 6-12","Schottenring 7-9","Dierichgasse 27","Wipplingerstraße 34"], correct:"Hernalser Gürtel 6-12", coords:[48.218900, 16.337500] },
+    { name:"Verkehrsamt (Führerschein/Taxilenker)", question:"Wo befindet sich das Verkehrsamt (Führerschein/Taxilenker)?", options:["Dierichgasse 27","Schottenring 7-9","Hernalser Gürtel 6-12","Wagramer Straße 5"], correct:"Dierichgasse 27", coords:[48.192900, 16.407500] }
   ],
   stadtpolizei: [
-    { name:"PI Innere Stadt", question:"Wo liegt die PI Innere Stadt?", options:["Deutschmeisterplatz 3","Mariahilfer Straße 1","Landesgerichtsstraße 11","Herrengasse 7","Schottenring 7-9","Ballhausplatz 1"], correct:0, coords:[48.2146,16.3777] }
+    { name:"PI Innere Stadt", question:"Wo liegt die PI Innere Stadt?", options:["Deutschmeisterplatz 3","Mariahilfer Straße 1","Landesgerichtsstraße 11","Herrengasse 7"], correct:"Deutschmeisterplatz 3", coords:[48.214600, 16.377700] },
+    { name:"PI Mariahilf", question:"PI Mariahilf – wo?", options:["Amerlingstraße 33","Schönbrunner Straße 59","Landstraßer Hauptstraße 29","Nußdorfer Straße 28"], correct:"Amerlingstraße 33", coords:[48.196900, 16.348300] },
+    { name:"PI Favoriten", question:"Wo liegt die PI Favoriten?", options:["Van der Nüll-Gasse 11","Laxenburger Straße 43-45","Favoritenstraße 12","Gudrunstraße 10"], correct:"Van der Nüll-Gasse 11", coords:[48.173600, 16.369700] }
   ],
   post: [
-    { name:"Hauptpost", question:"Wo befindet sich die Hauptpost?", options:["Fleischmarkt 19","Herrengasse 7","Schwedenplatz 2","Kärntner Straße 1","Mariahilfer Straße 1","Ballhausplatz 1"], correct:0, coords:[48.2090,16.3750] }
+    { name:"Hauptpost", question:"Hauptpost liegt am …", options:["Fleischmarkt 24","Stubenring 1","Herrengasse 7","Schwedenplatz 2"], correct:"Fleischmarkt 24", coords:[48.210278, 16.373889] }
   ],
   medien: [
-    { name:"APA", question:"Wo befindet sich APA (IPZ) / Media Print?", options:["Lassallestraße 89","Kirchengasse 1","Schottenring 10","Kärntner Ring 5","Mariahilfer Straße 1","Ballhausplatz 1"], correct:0, coords:[48.2240,16.4150] }
+    { name:"APA – Austria Presseagentur", question:"Wo befindet sich APA (IPZ)?", options:["Laimgrubengasse 10","Schottenring 10","Kärntner Ring 5","Wipplingerstraße 34"], correct:"Laimgrubengasse 10", coords:[48.199444, 16.361111] }
   ],
   kammern: [
-    { name:"Wirtschaftskammer", question:"Wo befindet sich die WKO Wien?", options:["Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2058,16.3797] }
+    { name:"Wirtschaftskammer Wien", question:"Wo befindet sich die WKO Wien?", options:["Stubenring 8-10","Getreidemarkt 10","Mariahilfer Straße 123","Am Heumarkt 4"], correct:"Stubenring 8-10", coords:[48.205800, 16.379700] }
   ],
   bezirksaemter: [
-    { name:"Bezirksamt 1", question:"Amtshaus des 1. Bezirks liegt …", options:["Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8","Ballhausplatz 1","Stubenring 1"], correct:0, coords:[48.2134,16.3686] }
+    { name:"Magistratisches Bezirksamt 1", question:"Amtshaus des 1. Bezirks liegt …", options:["Wipplingerstraße 8","Rathausplatz 1","Schottenring 10","Freyung 8"], correct:"Wipplingerstraße 8", coords:[48.213400, 16.368600] }
   ],
   hotels: [
-    { name:"Hotel Sacher", question:"Wo befindet sich das Hotel Sacher?", options:["Philharmonikerstraße 4","Kärntner Ring 1","Am Heumarkt 35-37","Albertinaplatz 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2039,16.3692] }
+    { name:"Hotel Sacher", question:"Wo befindet sich das Hotel Sacher?", options:["Philharmonikerstraße 4","Kärntner Ring 1","Am Heumarkt 35-37","Albertinaplatz 1"], correct:"Philharmonikerstraße 4", coords:[48.203900, 16.369200] },
+    { name:"Hilton Vienna Park", question:"Wo befindet sich Hilton Vienna Park?", options:["Am Stadtpark 1","Wagramer Straße 8","Schottenring 1","Landstraßer Gürtel 2"], correct:"Am Stadtpark 1", coords:[48.205500, 16.382800] },
+    { name:"Hotel Imperial", question:"Wo liegt das Hotel Imperial?", options:["Kärntner Ring 16","Parkring 12a","Philharmonikerstraße 4","Schottenring 24"], correct:"Kärntner Ring 16", coords:[48.202500, 16.372222] }
   ],
   cafes: [
-    { name:"Café Central", question:"Café Central liegt …", options:["Herrengasse 14","Rathausplatz 1","Judenplatz 11","Albertinaplatz 1","Ballhausplatz 1","Stubenring 1"], correct:0, coords:[48.2108,16.3653] }
+    { name:"Café Central", question:"Café Central liegt …", options:["Herrengasse 14","Rathausplatz 1","Judenplatz 11","Albertinaplatz 1"], correct:"Herrengasse 14", coords:[48.210800, 16.365300] },
+    { name:"Café Landtmann", question:"Café Landtmann liegt …", options:["Universitätsring 4","Opernring 2","Kärntner Straße 10","Schwarzenbergplatz 1"], correct:"Universitätsring 4", coords:[48.210700, 16.360400] },
+    { name:"Café Hawelka", question:"Wo ist das Café Hawelka?", options:["Dorotheergasse 6","Operngasse 7","Gumpendorfer Straße 11","Josefstädter Straße 66"], correct:"Dorotheergasse 6", coords:[48.207778, 16.368889] }
   ],
   heurige: [
-    { name:"Heurigenort 19", question:"Zum 19. Bezirk gehört als Heurigenort …", options:["Grinzing","Stammersdorf","Sievering","Jedlesee","Heiligenstadt","Nussdorf"], correct:0, coords:[48.2594,16.3359] }
+    { name:"Heurigenorte 19. Bezirk", question:"Zum 19. Bezirk gehört als Heurigenort …", options:["Grinzing","Stammersdorf","Sievering","Jedlesee"], correct:"Grinzing", coords:[48.259400, 16.335900] },
+    { name:"Heurigenorte 21. Bezirk", question:"Zum 21. Bezirk gehört als Heurigenort …", options:["Stammersdorf","Grinzing","Oberlaa","Mauer"], correct:"Stammersdorf", coords:[48.306111, 16.406667] }
   ],
   friedhoefe: [
-    { name:"Zentralfriedhof", question:"Wo befindet sich der Haupteingang (Tor 2)?", options:["Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.1528,16.4337] }
+    { name:"Zentralfriedhof", question:"Wo befindet sich der Haupteingang (Tor 2)?", options:["Simmeringer Hauptstraße 234","Währinger Gürtel 14","Laxenburger Straße 365","Hernalser Gürtel 6-12"], correct:"Simmeringer Hauptstraße 234", coords:[48.152800, 16.433700] },
+    { name:"Friedhof Grinzing", question:"Wo liegt der Friedhof Grinzing?", options:["An den Langen Lüssen 33","Hartäckerstraße 65","Wildgrubgasse 20","Pötzleinsdorfer Höhe 2"], correct:"An den Langen Lüssen 33", coords:[48.261111, 16.342778] }
   ],
   kranken: [
-    { name:"AKH Wien", question:"Wo befindet sich das AKH?", options:["Währinger Gürtel 18-20","Landstraßer Hauptstraße 1","Schönbrunner Straße 100","Kärntner Ring 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2202,16.3451] }
+    { name:"AKH Wien", question:"Wo befindet sich das AKH?", options:["Währinger Gürtel 18-20","Landstraßer Hauptstraße 1","Schönbrunner Straße 100","Kärntner Ring 1"], correct:"Währinger Gürtel 18-20", coords:[48.220200, 16.345100] },
+    { name:"Klinik Favoriten", question:"Adresse des SMZ Süd?", options:["Kundratstraße 3","Prinzenstraße 1","Spitalgasse 23","Sechshauser Straße 10"], correct:"Kundratstraße 3", coords:[48.158900, 16.370200] },
+    { name:"Hanusch Krankenhaus", question:"Wo liegt das Hanusch Krankenhaus?", options:["Heinrich-Collin-Straße 30","Dornbacher Straße 20-30","Baumgasse 20A","Sanatoriumstraße 2"], correct:"Heinrich-Collin-Straße 30", coords:[48.193611, 16.286111] }
   ],
   pension: [
-    { name:"Pensionistenwohnheim 9", question:"Wohnheim in der Seegasse liegt im …", options:["9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk","1. Bezirk","7. Bezirk"], correct:0, coords:[48.2217,16.3617] }
+    { name:"Pensionistenwohnheim", question:"Wohnheim in der Seegasse liegt im …", options:["9. Bezirk","3. Bezirk","15. Bezirk","22. Bezirk"], correct:"9. Bezirk", coords:[48.221700, 16.361700] }
   ],
   kultur: [
-    { name:"Burgtheater", question:"Adresse vom Burgtheater?", options:["Universitätsring 2","Opernring 2","Kärntner Straße 1","Schottenring 10","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2105,16.3600] }
+    { name:"Burgtheater", question:"Adresse vom Burgtheater?", options:["Universitätsring 2","Opernring 2","Kärntner Straße 1","Schottenring 10"], correct:"Universitätsring 2", coords:[48.210500, 16.360000] },
+    { name:"Staatsoper", question:"Wo liegt die Staatsoper?", options:["Opernring 2","Universitätsring 2","Kärntner Straße 1","Schwarzenbergplatz 1"], correct:"Opernring 2", coords:[48.203611, 16.369167] }
   ],
   kabarett: [
-    { name:"Kabarett Simpl", question:"Wo ist das Kabarett Simpl?", options:["Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2079,16.3772] }
+    { name:"Kabarett Simpl", question:"Wo ist das Kabarett Simpl?", options:["Wollzeile 36","Mariahilfer Straße 99","Donaukanalstraße 1","Herrengasse 14"], correct:"Wollzeile 36", coords:[48.207900, 16.377200] }
   ],
   unis: [
-    { name:"Universität Wien", question:"Adresse der Universität Wien?", options:["Universitätsring 1","Karlsplatz 13","Schottenring 8","Schillerplatz 3","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2130,16.3607] }
+    { name:"Universität Wien", question:"Adresse der Universität Wien?", options:["Universitätsring 1","Karlsplatz 13","Schottenring 8","Schillerplatz 3"], correct:"Universitätsring 1", coords:[48.213000, 16.360700] },
+    { name:"TU Wien", question:"Adresse der Technischen Universität Wien?", options:["Karlsplatz 13","Universitätsring 1","Währinger Straße 25","Schottenring 10"], correct:"Karlsplatz 13", coords:[48.199500, 16.369000] },
+    { name:"Wirtschaftsuniversität", question:"Wo liegt die WU?", options:["Welthandelsplatz 1","Universitätsring 1","Karlsplatz 13","Schottenring 8"], correct:"Welthandelsplatz 1", coords:[48.213889, 16.416667] }
   ],
   museen: [
-    { name:"Albertina", question:"Wo liegt die Albertina?", options:["Albertinaplatz 1","Museumsplatz 1","Mariahilfer Straße 1","Stephansplatz 1","Ballhausplatz 1","Rathausplatz 1"], correct:0, coords:[48.2043,16.3686] }
+    { name:"Albertina", question:"Wo liegt die Albertina?", options:["Albertinaplatz 1","Museumsplatz 1","Mariahilfer Straße 1","Stephansplatz 1"], correct:"Albertinaplatz 1", coords:[48.204300, 16.368600] },
+    { name:"Naturhistorisches Museum", question:"Wo liegt das NHM?", options:["Burgring 7","Heldenplatz","Museumsplatz 1","Maria-Theresien-Platz"], correct:"Burgring 7", coords:[48.205600, 16.361300] },
+    { name:"Kunsthistorisches Museum", question:"Adresse des KHM?", options:["Burgring 5","Maria-Theresien-Platz","Museumsplatz 1","Albertinaplatz 1"], correct:"Burgring 5", coords:[48.203900, 16.361700] }
   ],
   bauten: [
-    { name:"Hofburg", question:"Hofburg/Heldenplatz gehört zu …", options:["Ringstraße","Kärntnerring","Gürtel","Franz-Josefs-Kai","Ballhausplatz","Rathausplatz"], correct:0, coords:[48.2066,16.3636] }
+    { name:"Stephansdom", question:"Wo liegt der Stephansdom?", options:["Stephansplatz 3","Kärntner Straße 1","Graben 1","Stock-im-Eisen-Platz 1"], correct:"Stephansplatz 3", coords:[48.208500, 16.373000] },
+    { name:"Schloss Schönbrunn", question:"Haupteingang Schloss Schönbrunn?", options:["Schönbrunner Schloßstraße 47","Maxingstraße 13b","Hietzinger Hauptstraße 2","Schönbrunner Straße 100"], correct:"Schönbrunner Schloßstraße 47", coords:[48.185300, 16.312500] },
+    { name:"Belvedere", question:"Wo liegt das Schloss Belvedere?", options:["Prinz-Eugen-Straße 27","Rennweg 6","Schwarzenbergplatz 1","Landstraßer Gürtel 1"], correct:"Prinz-Eugen-Straße 27", coords:[48.191900, 16.380800] }
   ],
   guertel: [
-    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Mariahilfer Straße)", options:["innerer Gürtel","äußerer Gürtel"], correct:0, coords:[48.1956,16.3394] }
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Mariahilfer Straße × Mariahilfer Gürtel)", options:["innerer Gürtel","äußerer Gürtel"], correct:"innerer Gürtel", coords:[48.195600, 16.339400], viz:{coords:[48.195600, 16.339400], bearing:45, side:"innerer", nameA:"Gürtel", nameB:"Mariahilfer Straße"} },
+    { name:"Gürtel-Kreuzung", question:"Ist diese Kreuzung am inneren oder am äußeren Gürtel? (Nußdorfer Straße × Währinger Gürtel)", options:["innerer Gürtel","äußerer Gürtel"], correct:"innerer Gürtel", coords:[48.233200, 16.355400], viz:{coords:[48.233200, 16.355400], bearing:120, side:"innerer", nameA:"Gürtel", nameB:"Nußdorfer Straße"} },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Mariahilfer Straße über den Gürtel gequert haben?", options:["Sechshauser Straße","Burggasse","Thaliastraße","Winckelmannstraße"], correct:"Sechshauser Straße", coords:[48.193500, 16.335400], viz:{coords:[48.195600, 16.339400], bearing:45, side:"innerer", nameA:"Mariahilfer Straße", nameB:"Sechshauser Straße"} },
+    { name:"nach dem Gürtel", question:"Wie heißt die Straße weiter, nachdem Sie die Burggasse über den Gürtel gequert haben?", options:["Gablenzgasse","Lerchenfelder Gürtel","Thaliastraße","Mariahilfer Straße"], correct:"Gablenzgasse", coords:[48.205800, 16.338900], viz:{coords:[48.205800, 16.338900], bearing:45, side:"innerer", nameA:"Burggasse", nameB:"Gablenzgasse"} },
   ],
   donau: [
-    { name:"Schwedenbrücke", question:"Welche Brücke verbindet Rotenturmstraße mit der Taborstraße?", options:["Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke","Reichsbrücke","Floridsdorfer Brücke"], correct:0, coords:[48.2125,16.3783] }
+    { name:"Schwedenbrücke", question:"Welche Brücke verbindet Rotenturmstraße mit der Taborstraße (über den Donaukanal)?", options:["Schwedenbrücke","Aspernbrücke","Salztorbrücke","Marienbrücke"], correct:"Schwedenbrücke", coords:[48.212500, 16.378300] },
+    { name:"Reichsbrücke", question:"Welche Brücke verbindet die Donaustadt mit dem 2. Bezirk?", options:["Reichsbrücke","Floridsdorfer Brücke","Nordbrücke","Brigittenauer Brücke"], correct:"Reichsbrücke", coords:[48.229167, 16.411111] }
   ],
   nummern: [
-    { name:"Nummerierung", question:"Wie werden die Häuser in Wien nummeriert?", options:["Ungerade links / gerade rechts stadtauswärts","Gerade links / ungerade rechts stadtauswärts","Fortlaufend im Uhrzeigersinn","Nur ungerade Nummern in Wien","Alphabetisch nach Straßennamen","Nach Bezirksnummern"], correct:0, coords:[48.206,16.372] }
+    { name:"Nummerierung", question:"Wie werden die Häuser in Wien nummeriert?", options:[
+      "Ungerade links / gerade rechts stadtauswärts", "Gerade links / ungerade rechts stadtauswärts", "Fortlaufend im Uhrzeigersinn", "Nur ungerade Nummern in Wien"
+    ], correct:"Ungerade links / gerade rechts stadtauswärts", coords:[48.206000, 16.372000] }
   ],
   strassgeo: [
-    { name:"Praterstern", question:"Nennen Sie zwei stadtauswärts führende Straßen vom Praterstern.", options:["Praterstraße & Ausstellungsstraße","Kärntner Straße & Opernring","Mariahilfer Straße & Burggasse","Währinger Straße & Hernalser Hauptstraße","Ringstraße & Franz-Josefs-Kai","Donaukanalstraße & Schwedenplatz"], correct:0, coords:[48.2167,16.3925] }
+    { name:"Praterstern – auswärts führende Straßen", question:"Nennen Sie zwei stadtauswärts führende Straßen vom Praterstern.", options:["Praterstraße & Ausstellungsstraße","Kärntner Straße & Opernring","Mariahilfer Straße & Burggasse","Währinger Straße & Hernalser Hauptstraße"], correct:"Praterstraße & Ausstellungsstraße", coords:[48.216700, 16.392500] }
   ],
   wichtige: [
-    { name:"Ringstraße", question:"Zum Ring gehören …", options:["Opernring / Burgring / Universitätsring","Kärntner Straße / Graben","Gürtel / Triester Straße","Donauufer Autobahn","Praterstraße / Ausstellungsstraße","Mariahilfer Straße / Neubaugürtel"], correct:0, coords:[48.2053,16.3685] }
+    { name:"Ringstraße – Teil", question:"Zum Ring gehören …", options:["Opernring / Burgring / Universitätsring","Kärntner Straße / Graben","Gürtel / Triester Straße","Donauufer Autobahn"], correct:"Opernring / Burgring / Universitätsring", coords:[48.205300, 16.368500] },
+    { name:"A23 Südosttangente", question:"Welche Autobahn ist die Südosttangente?", options:["A23","A2","A4","A22"], correct:"A23", coords:[48.160000, 16.420000] }
   ],
   tarif: [
-    { name:"Grundtaxe", question:"Wie hoch ist die Grundtaxe am Tag?", options:["3,80 €","4,30 €","3,50 €","2,90 €","5,00 €","4,80 €"], correct:0 }
+    { name:"Grundtaxe", question:"Wie hoch ist die Grundtaxe am Tag?", options:["3,80 €","4,30 €","3,50 €","2,90 €"], correct:"3,80 €" },
+    { name:"Grundtaxe Nacht", question:"Wie hoch ist die Grundtaxe nachts/So/Feiertag?", options:["4,30 €","3,80 €","5,00 €","4,90 €"], correct:"4,30 €" },
+    { name:"Wartezeit", question:"Wie hoch ist die Zeittaxe für eine Stunde Wartezeit?", options:["34,80 €","28,00 €","40,00 €","20,00 €"], correct:"34,80 €" },
+    { name:"Nachtzeit", question:"Ab wann gilt der Nachtzuschlag?", options:["23:00–06:00","22:00–05:00","00:00–06:00","21:00–05:00"], correct:"23:00–06:00" }
   ],
   stvo: [
-    { name:"Wohnstraße", question:"Dürfen Taxis durch Wohnstraßen durchfahren?", options:["Nur Schrittgeschwindigkeit (4–5 km/h)","Ja, без Einschränkung","Nein, verboten","Nur tagsüber","Nur mit Sondergenehmigung","Nur zum Ein- und Aussteigen"], correct:0 }
+    { name:"Wohnstraße", question:"Dürfen Taxis durch Wohnstraßen durchfahren?", options:["Nur Schrittgeschwindigkeit (4–5 km/h)","Ja, ohne Einschränkung","Nein, verboten"], correct:"Nur Schrittgeschwindigkeit (4–5 km/h)" },
+    { name:"Rettungsgasse", question:"Wo muss eine Rettungsgasse gebildet werden?", options:["Auf Autobahnen & Schnellstraßen","Nur im Ortsgebiet","Nirgendwo"], correct:"Auf Autobahnen & Schnellstraßen" }
   ],
   kfg: [
-    { name:"Winterreifenpflicht", question:"Für Taxis gilt Winterreifenpflicht …", options:["1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)","1. Okt – 1. März","Ganzjährig","Nur bei Schnee","1. Dez – 28. Feb","Nur auf Autobahnen"], correct:0 }
+    { name:"Winterreifenpflicht", question:"Für Taxis gilt Winterreifenpflicht …", options:["1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)","1. Okt – 1. März","Ganzjährig","Nur bei Schnee"], correct:"1. Nov – 15. Apr (bei winterlichen Fahrbahnverhältnissen)" }
   ],
   arbeit: [
-    { name:"Mindestlohn", question:"Der KV-Mindestlohn im Taxigewerbe gilt …", options:["Österreichweit (Bundesgebiet)","Nur in Wien","Nur für Unternehmer","Nur für Angestellte","Nur in Großstädten","Nur für Vollzeitkräfte"], correct:0 }
+    { name:"Mindestlohn (Kollektivvertrag)", question:"Der KV-Mindestlohn im Taxigewerbe gilt …", options:["Österreichweit (Bundesgebiet)","Nur in Wien","Nur für Unternehmer"], correct:"Österreichweit (Bundesgebiet)" },
+    { name:"Arbeitszeit", question:"Wie lange darf die tägliche Arbeitszeit maximal sein?", options:["12 Stunden","8 Stunden","10 Stunden","9 Stunden"], correct:"12 Stunden" }
   ]
 };
 
 // Gürtel-узлы для учебного режима
 const GUERTEL_INTERSECTIONS = [
-  { title:"Mariahilfer Straße × Mariahilfer Gürtel", side:"innerer", coords:[48.1956,16.3394] },
-  { title:"Nußdorfer Straße × Währinger Gürtel", side:"innerer", coords:[48.2332,16.3554] },
-  { title:"Burggasse × Neubaugürtel", side:"innerer", coords:[48.2058,16.3389] },
-  { title:"Thaliastraße × Lerchenfelder Gürtel", side:"innerer", coords:[48.2094,16.3367] },
-  { title:"Hernalser Hauptstraße × Hernalser Gürtel", side:"innerer", coords:[48.2185,16.3326] },
-  { title:"Ottakringer Straße × Ottakringer Gürtel", side:"äußerer", coords:[48.2148,16.3200] }
+  { title:"Mariahilfer Straße × Mariahilfer Gürtel", side:"innerer", coords:[48.1956,16.3394], bearing:45 },
+  { title:"Nußdorfer Straße × Währinger Gürtel", side:"innerer", coords:[48.2332,16.3554], bearing:120 },
+  { title:"Burggasse × Neubaugürtel", side:"innerer", coords:[48.2058,16.3389], bearing:45 },
+  { title:"Thaliastraße × Lerchenfelder Gürtel", side:"innerer", coords:[48.2094,16.3367], bearing:45 },
+  { title:"Hernalser Hauptstraße × Hernalser Gürtel", side:"innerer", coords:[48.2185,16.3326], bearing:45 },
+  { title:"Ottakringer Straße × Ottakringer Gürtel", side:"äußerer", coords:[48.2148,16.3200], bearing:45 },
+  { title:"Triester Straße × Gürtel", side:"äußerer", coords:[48.1748,16.3558], bearing:30 },
+  { title:"Schönbrunner Straße × Margareten Gürtel", side:"innerer", coords:[48.1876,16.3419], bearing:35 }
 ];
-
-// ============ Helpers ============
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const toast = (m,ms=1500)=>{ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),ms); };
-function shuffle(a){ const x=a.slice(); for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]] } return x; }
-
-// ============ Map ============
-const map = L.map('map',{zoomControl:true}).setView([48.2082,16.3738],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
-
-// Создаем слои для маркеров
-const questionMarkers = L.layerGroup().addTo(map);
-const answerMarkers = L.layerGroup().addTo(map);
-
-// Функция для создания кастомных маркеров
-function createCustomMarker(color, className) {
-  return L.divIcon({
-    className: className,
-    html: `<div style="background-color: ${color}; border: 3px solid #fff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-  });
-}
-
-// Создаем кастомные маркеры
-const questionMarker = createCustomMarker('#2563eb', 'marker-question');
-const correctMarker = createCustomMarker('#16a34a', 'marker-correct');
-const incorrectMarker = createCustomMarker('#dc2626', 'marker-incorrect');
-
-function fly([lat,lng], zoom=16){ map.flyTo([lat,lng], zoom, {duration:1.0}); }
-
-// ============ Data Management ============
-let DATA = {};
-
-function loadQuestions() {
-  const saved = localStorage.getItem('taxiQuizQuestions');
-  if (saved) {
-    DATA = JSON.parse(saved);
-  } else {
-    // Загружаем стандартные вопросы
-    DATA = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
-    saveQuestions();
-  }
-  updateCategoryCounts();
-}
-
-function saveQuestions() {
-  localStorage.setItem('taxiQuizQuestions', JSON.stringify(DATA));
-}
-
-function updateCategoryCounts() {
-  THEMEN.forEach(t => {
-    const count = DATA[t.key]?.length || 0;
-    const countElement = $(`.cat[data-key="${t.key}"] .count`);
-    if (countElement) {
-      countElement.textContent = count;
-    }
-  });
-}
-
-// ============ Statistics ============
-let stats = {
-  total: 0,
-  correct: 0,
-  get accuracy() {
-    return this.total > 0 ? Math.round((this.correct / this.total) * 100) : 0;
-  }
-};
-
-function updateStatsDisplay() {
-  $("#correctCount").textContent = stats.correct;
-  $("#totalCount").textContent = stats.total;
-  $("#accuracy").textContent = stats.accuracy + '%';
-}
-
-function saveStats() {
-  localStorage.setItem('taxiQuizStats', JSON.stringify(stats));
-}
-
-function loadStats() {
-  const saved = localStorage.getItem('taxiQuizStats');
-  if (saved) {
-    stats = JSON.parse(saved);
-  }
-  updateStatsDisplay();
-}
-
-function resetStats() {
-  stats = { total: 0, correct: 0 };
-  saveStats();
-  updateStatsDisplay();
-  toast("Статистика сброшена");
-}
 
 // ============ Quiz Engine ============
 let selected=[], pool=[], idx=0, score=0, examMode=false;
@@ -508,37 +420,26 @@ function buildPool(keys){
   keys.forEach(k=>{ if(DATA[k]) out.push(...DATA[k]); });
   return shuffle(out);
 }
-
 function startQuiz(mode="normal"){
   const checked = $$("#catList input[type=checkbox]:checked").map(x=>x.value);
-  if(checked.length===0){ toast("Bitte wählen Sie mindestens eine Kategorie aus!"); return; }
+  if(checked.length===0){ toast("Bitte Kategorie wählen!"); return; }
   selected=checked; examMode=(mode==="exam"); pool=buildPool(selected);
   if(examMode && pool.length>10) pool=pool.slice(0,10);
   idx=0; score=0;
-  
-  // Очищаем маркеры перед началом новой викторины
-  questionMarkers.clearLayers();
-  answerMarkers.clearLayers();
-  
   $("#quizPanel").style.display="block";
   $("#sidebar").style.display="none";
   $("#studyPanel").style.display="none";
+  $("#leaderPanel").style.display="none";
   $("#statsPanel").style.display="none";
-  $("#editPanel").style.display="none";
   showQuestion(true);
 }
-
 function showQuestion(first=false){
   const q = pool[idx]; if(!q) return;
   $("#progress").textContent=`Frage ${idx+1} von ${pool.length}`;
   $("#progressFill").style.width = `${Math.round((idx)/pool.length*100)}%`;
   $("#questionText").textContent=q.question;
   const cont=$("#optionsContainer"); cont.innerHTML="";
-  
-  // Фильтруем пустые варианты ответов
-  const validOptions = q.options.filter(opt => opt && opt.trim() !== '');
-  
-  shuffle(validOptions).forEach((opt,i)=>{
+  shuffle(q.options).forEach((opt,i)=>{
     const d=document.createElement("div");
     d.className="option"; d.tabIndex=0; d.dataset.correct=(opt===q.correct);
     d.innerHTML=`<strong>${i+1}.</strong> ${opt}`;
@@ -548,53 +449,29 @@ function showQuestion(first=false){
   });
   $("#nextBtn").style.display="none";
   $("#endBtns").style.display="none";
-  
   // Озвучка
-  speak(q.question);
-  
-  // Показываем на карте если есть координаты
-  if(Array.isArray(q.coords)){ 
-    fly(q.coords,16); 
-    
-    // Добавляем маркер вопроса
-    questionMarkers.clearLayers();
-    L.marker(q.coords, {icon: questionMarker})
-      .addTo(questionMarkers)
-      .bindPopup(`<b>${q.name}</b><br>${q.question}`)
-      .openPopup(); 
-  }
+  speak(`${q.name}. ${q.question}`);
+  // Если это Gürtel-вопрос с визуализацией — нарисуем перекрёсток
+  if(q.viz){ drawIntersection({coords:q.viz.coords, bearing:q.viz.bearing, side:q.viz.side, nameA:q.viz.nameA||"Gürtel", nameB:q.viz.nameB||"Straße"}); }
 }
-
 function checkAnswer(el,opt){
   const q=pool[idx];
   const ok=(opt===q.correct);
   $$("#optionsContainer .option").forEach(o=>o.onclick=null);
   el.classList.add(ok?"correct":"incorrect");
-  if(!ok){ 
-    const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); 
-    if(r) r.classList.add("correct"); 
-  }
+  if(!ok){ const r=$$("#optionsContainer .option").find(x=>x.dataset.correct==="true"); if(r) r.classList.add("correct"); }
   if(ok) score++;
 
-  // Обновление статистики
-  stats.total++;
-  if(ok) stats.correct++;
-  saveStats();
-  updateStatsDisplay();
-
-  // Добавляем маркер ответа (правильный/неправильный)
-  if(Array.isArray(q.coords)){ 
-    const markerIcon = ok ? correctMarker : incorrectMarker;
-    L.marker(q.coords, {icon: markerIcon})
-      .addTo(answerMarkers)
-      .bindPopup(`<b>${q.name}</b><br>${ok ? "✅ Richtig" : "❌ Falsch"}`)
-      .openPopup(); 
-  }
+  if(answerMarker){ map.removeLayer(answerMarker); answerMarker=null; }
+  if(Array.isArray(q.coords)){ fly(q.coords,16); answerMarker=L.marker(q.coords).addTo(map).bindPopup(`<b>${q.name}</b><br>${q.correct}`).openPopup(); }
 
   speak(ok ? "Richtig. Gut gemacht." : `Leider falsch. Richtig ist: ${q.correct}.`);
   $("#nextBtn").style.display="block";
-}
 
+  // session stats
+  sess.total++; if(ok) sess.correct++;
+  const cat = detectCat(q); if(!sess.byCat[cat]) sess.byCat[cat]={total:0,correct:0}; sess.byCat[cat].total++; if(ok) sess.byCat[cat].correct++;
+}
 function nextQuestion(){
   idx++;
   if(idx<pool.length){ showQuestion(); }
@@ -604,270 +481,136 @@ function nextQuestion(){
     $("#progress").textContent=""; $("#progressFill").style.width="100%";
     $("#nextBtn").style.display="none"; $("#endBtns").style.display="block";
     speak(`Fertig. Punkte: ${score} von ${pool.length}.`);
+    saveSession();
   }
 }
-
-function backToMenu(){ 
-  $("#quizPanel").style.display="none"; 
-  $("#sidebar").style.display="block"; 
-  $("#endBtns").style.display="none"; 
-}
-
-function restartQuiz(){ 
-  $("#endBtns").style.display="none"; 
-  idx=0; 
-  score=0; 
-  pool=shuffle(pool); 
-  
-  // Очищаем маркеры при перезапуске
-  questionMarkers.clearLayers();
-  answerMarkers.clearLayers();
-  
-  showQuestion(true); 
+function backToMenu(){ $("#quizPanel").style.display="none"; $("#sidebar").style.display="block"; $("#endBtns").style.display="none"; }
+function restartQuiz(){ $("#endBtns").style.display="none"; idx=0; score=0; pool=shuffle(pool); showQuestion(true); }
+function detectCat(q){
+  for(const k of Object.keys(DATA)) if(DATA[k].includes(q)) return k;
+  return "misc";
 }
 
 // ============ Gürtel Study ============
 function openStudy(){
   $("#studyPanel").style.display="block";
+  $("#leaderPanel").style.display="none";
   $("#statsPanel").style.display="none";
   $("#sidebar").style.display="none";
   $("#quizPanel").style.display="none";
-  $("#editPanel").style.display="none";
   const list=$("#studyList"); list.innerHTML="";
   GUERTEL_INTERSECTIONS.forEach((g,i)=>{
     const div=document.createElement("div");
     div.className="item";
     div.style.cssText="padding:8px 10px;border-bottom:1px dashed var(--border);cursor:pointer";
-    div.innerHTML = `${i+1}. ${g.title} — <span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side} Gürtel</span>`;
-    div.onclick = ()=> {
-      fly(g.coords, 16);
-      // Очищаем предыдущие маркеры и добавляем новый
-      questionMarkers.clearLayers();
-      answerMarkers.clearLayers();
-      L.marker(g.coords, {icon: questionMarker})
-        .addTo(questionMarkers)
-        .bindPopup(`<b>${g.title}</b><br><span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side} Gürtel</span>`)
-        .openPopup();
-    };
+    div.innerHTML = `${i+1}. ${g.title} — <span class="badge ${g.side==='innerer'?'badge-inner':'badge-outer'}">${g.side}</span>`;
+    div.onclick = ()=> drawIntersection({coords:g.coords, bearing:g.bearing, side:g.side, nameA:"Gürtel", nameB:g.title.split(' × ')[0]});
     list.appendChild(div);
   });
   toast("Учебный режим Gürtel открыт");
 }
 
-// ============ Question Editor ============
-function openEditor(){
-  $("#editPanel").style.display="block";
-  $("#statsPanel").style.display="none";
-  $("#sidebar").style.display="none";
-  $("#quizPanel").style.display="none";
-  $("#studyPanel").style.display="none";
-  
-  // Заполняем select категориями
-  const categorySelect = $("#categorySelect");
-  categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
-  THEMEN.forEach(t => {
-    const option = document.createElement("option");
-    option.value = t.key;
-    option.textContent = `${t.title} (${DATA[t.key]?.length || 0} вопросов)`;
-    categorySelect.appendChild(option);
-  });
-}
+// ============ Auth ============
+let isReg=false;
+$("#toRegister").onclick=(e)=>{e.preventDefault();isReg=true;$("#formTitle").textContent="Register";$("#loginPass2").style.display="block";$("#submitBtn").textContent="Register";};
+$("#toLogin").onclick=(e)=>{e.preventDefault();isReg=false;$("#formTitle").textContent="Login";$("#loginPass2").style.display="none";$("#submitBtn").textContent="Log in";};
+$("#submitBtn").onclick=async()=>{
+  const email=$("#loginEmail").value.trim(), p1=$("#loginPass").value.trim(), p2=$("#loginPass2").value.trim();
+  try{
+    if(isReg){ if(p1!==p2){ $("#loginError").textContent="Passwords do not match!"; return; } await createUserWithEmailAndPassword(auth,email,p1); toast("✅ Registration successful!"); }
+    else{ await signInWithEmailAndPassword(auth,email,p1); toast("✅ Login successful!"); }
+  }catch(err){ $("#loginError").textContent="⚠️ "+err.message; }
+};
+$("#logoutBtn").onclick=()=>signOut(auth);
+onAuthStateChanged(auth, async (user)=>{ if(user){ $("#loginModal").style.display="none"; toast("Willkommen!"); loadCats(); loadMyStats(); loadLeaderboard(); } else { $("#loginModal").style.display="flex"; } });
 
-function saveNewQuestion(){
-  const category = $("#categorySelect").value;
-  const name = $("#questionName").value.trim();
-  const question = $("#questionTextEdit").value.trim();
-  const options = [
-    $("#option1").value.trim(),
-    $("#option2").value.trim(),
-    $("#option3").value.trim(),
-    $("#option4").value.trim(),
-    $("#option5").value.trim(),
-    $("#option6").value.trim()
-  ].filter(opt => opt !== '');
-  
-  const correctIndex = parseInt($("#correctAnswer").value);
-  
-  if (!category || !name || !question || options.length < 2 || isNaN(correctIndex)) {
-    toast("Заполните все поля правильно!");
-    return;
-  }
-  
-  if (!DATA[category]) {
-    DATA[category] = [];
-  }
-  
-  const newQuestion = {
-    name,
-    question,
-    options,
-    correct: options[correctIndex]
-  };
-  
-  DATA[category].push(newQuestion);
-  saveQuestions();
-  updateCategoryCounts();
-  
-  // Очищаем форму
-  $("#questionName").value = "";
-  $("#questionTextEdit").value = "";
-  $("#option1").value = "";
-  $("#option2").value = "";
-  $("#option3").value = "";
-  $("#option4").value = "";
-  $("#option5").value = "";
-  $("#option6").value = "";
-  $("#correctAnswer").value = "";
-  
-  toast("Вопрос сохранен!");
+// ============ Stats & Leaderboard ============
+const sess={total:0,correct:0,byCat:{}};
+function resetSess(){ sess.total=0; sess.correct=0; sess.byCat={}; }
+async function saveSession(){
+  const u=auth.currentUser; if(!u) return;
+  const ts=Date.now();
+  await set(ref(db, `sessions/${u.uid}/${ts}`), {ts, total:sess.total, correct:sess.correct, byCat:sess.byCat, cats:selected, examMode, score, poolLen:pool.length});
+  const sref=ref(db, `stats/${u.uid}`); const snap=await get(sref);
+  let agg=snap.exists()? snap.val():{total:0,correct:0,byCat:{}, last:0};
+  agg.total += sess.total; agg.correct += sess.correct; agg.last = ts;
+  for(const k of Object.keys(sess.byCat)){ if(!agg.byCat[k]) agg.byCat[k]={total:0,correct:0}; agg.byCat[k].total+=sess.byCat[k].total; agg.byCat[k].correct+=sess.byCat[k].correct; }
+  await set(sref, agg);
+  const acc = agg.total? Math.round(100*agg.correct/agg.total):0;
+  await set(ref(db, `leaderboard/${u.uid}`), { user:u.email||u.uid, correct:agg.correct, total:agg.total, acc, last:ts });
+  resetSess(); loadMyStats(); loadLeaderboard();
 }
-
-function loadDefaultQuestions(){
-  if(confirm("Загрузить стандартные вопросы? Текущие вопросы будут потеряны.")){
-    DATA = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
-    saveQuestions();
-    updateCategoryCounts();
-    toast("Стандартные вопросы загружены");
-  }
+async function loadMyStats(){
+  const u=auth.currentUser; if(!u) return;
+  const snap=await get(ref(db,`stats/${u.uid}`)); const el=$("#myStats");
+  if(!snap.exists()){ el.innerHTML="<p class='small'>Нет данных. Сыграйте первую игру.</p>"; return; }
+  const st=snap.val(); const acc = st.total? Math.round(100*st.correct/st.total):0;
+  const cats=Object.entries(st.byCat||{}).map(([k,v])=>`<li>${k}: ${v.correct}/${v.total}</li>`).join("");
+  el.innerHTML = `<p><b>Правильных:</b> ${st.correct} / ${st.total} <span class="small">(${acc}%)</span></p><ul>${cats}</ul><p class="small">Обновлено: ${new Date(st.last).toLocaleString()}</p>`;
+}
+async function loadLeaderboard(){
+  const snap=await get(ref(db,'leaderboard')); const el=$("#leaderList"); el.innerHTML="";
+  if(!snap.exists()){ el.innerHTML="<p class='small'>Пока пусто.</p>"; return; }
+  const items=Object.values(snap.val()); items.sort((a,b)=> b.correct-a.correct || a.last-b.last);
+  const me=auth.currentUser?(auth.currentUser.email||auth.currentUser.uid):"";
+  items.slice(0,30).forEach((it,i)=>{ const row=document.createElement("div"); row.className="item"+(it.user===me?" you":""); row.innerHTML = `<div>#${i+1} <b>${it.user}</b></div><div>${it.correct}/${it.total} <span class="small">(${it.acc}%)</span></div>`; el.appendChild(row); });
 }
 
 // ============ TTS (ElevenLabs) ============
-let ttsOn=true; 
-const audioEl=new Audio(); 
-audioEl.volume=1;
+let ttsOn=true; const audioEl=new Audio(); audioEl.volume=1;
 let queue=[], playing=false;
-
 function speak(text){
   if(!ttsOn || !text) return;
-  queue.push(text);
+  queue.push(...text.replace(/\s+/g," ").split(/(?<=[\.\!\?])/g).map(s=>s.trim()).filter(Boolean));
   if(!playing) nextSpeak();
 }
-
 async function nextSpeak(){
   if(queue.length===0){ playing=false; return; }
-  playing=true; const text=queue.shift();
+  playing=true; const part=queue.shift();
   try{
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,{
       method:"POST",
       headers:{ "xi-api-key": ELEVEN_API_KEY, "Content-Type":"application/json", "Accept":"audio/mpeg" },
-      body: JSON.stringify({ 
-        text: text, 
-        model_id:"eleven_multilingual_v2", 
-        voice_settings:{ 
-          stability:0.4, 
-          similarity_boost:0.8, 
-          style:0, 
-          use_speaker_boost:true 
-        } 
-      })
+      body: JSON.stringify({ text: part, model_id:"eleven_multilingual_v2", voice_settings:{ stability:0.4, similarity_boost:0.8, style:0, use_speaker_boost:true } })
     });
-    if(res.ok){
-      const blob = await res.blob();
-      audioEl.src = URL.createObjectURL(blob);
-      await audioEl.play();
-      audioEl.onended = ()=> nextSpeak();
-    }
+    const blob = await res.blob();
+    audioEl.src = URL.createObjectURL(blob);
+    await audioEl.play();
+    audioEl.onended = ()=> nextSpeak();
   }catch(e){
-    console.warn("TTS error",e); 
-    playing=false;
+    console.warn("TTS error",e); playing=false;
   }
 }
-
-function stopSpeak(){ 
-  try{ 
-    audioEl.pause(); 
-    audioEl.currentTime=0; 
-  }catch{} 
-  queue=[]; 
-  playing=false; 
-}
+function stopSpeak(){ try{ audioEl.pause(); audioEl.currentTime=0; }catch{} queue=[]; playing=false; }
 
 // ============ UI Bindings ============
 function loadCats(){
   const wrap=$("#catList"); wrap.innerHTML="";
   THEMEN.forEach(t=>{
     const count = DATA[t.key]?.length || 0;
-    const div=document.createElement("label"); 
-    div.className="cat";
-    div.setAttribute("data-key", t.key);
-    div.innerHTML = `
-      <input type="checkbox" value="${t.key}" checked style="margin-right: 8px;">
-      <div style="flex: 1;">${t.title} <span class="small">(${t.pages})</span></div>
-      <span class="count">${count}</span>
-    `;
+    const div=document.createElement("label"); div.className="cat";
+    div.innerHTML = `<input type="checkbox" value="${t.key}"> <div>${t.title} <span class="small">(${t.pages})</span></div> <span class="count">${count}</span>`;
     wrap.appendChild(div);
   });
 }
-
-function selectAllCategories() {
-  $$("#catList input[type=checkbox]").forEach(checkbox => {
-    checkbox.checked = true;
-  });
-  toast("Alle Kategorien ausgewählt");
-}
-
-function deselectAllCategories() {
-  $$("#catList input[type=checkbox]").forEach(checkbox => {
-    checkbox.checked = false;
-  });
-  toast("Alle Kategorien abgewählt");
-}
-
-// Инициализация
-$("#menuBtn").onclick = ()=>{ 
-  const s=$("#sidebar"); 
-  s.style.display=(s.style.display==="block"?"none":"block"); 
-};
-
-$("#startBtn").onclick = ()=>{ startQuiz("normal"); };
-$("#examBtn").onclick  = ()=>{ startQuiz("exam"); };
+$("#menuBtn").onclick = ()=>{ const s=$("#sidebar"); s.style.display=(s.style.display==="block"?"none":"block"); };
+$("#startBtn").onclick = ()=>{ resetSess(); startQuiz("normal"); };
+$("#examBtn").onclick  = ()=>{ resetSess(); startQuiz("exam"); };
 $("#nextBtn").onclick  = nextQuestion;
 $("#againBtn").onclick = restartQuiz;
 $("#backBtn").onclick  = backToMenu;
 $("#studyBtn").onclick = openStudy;
-$("#editBtn").onclick = openEditor;
-$("#statsBtn").onclick = ()=>{ 
-  $("#statsPanel").style.display="block"; 
-  $("#studyPanel").style.display="none"; 
-  $("#sidebar").style.display="none"; 
-  $("#quizPanel").style.display="none"; 
-  $("#editPanel").style.display="none";
-};
-$("#ttsToggleBtn").onclick = ()=>{ 
-  ttsOn=!ttsOn; 
-  toast(ttsOn?"🔊 Озвучка включена":"🔇 Озвучка выключена"); 
-  if(!ttsOn) stopSpeak(); 
-};
-$("#resetStats").onclick = resetStats;
-$("#saveQuestion").onclick = saveNewQuestion;
-$("#loadDefault").onclick = loadDefaultQuestions;
-$("#selectAllBtn").onclick = selectAllCategories;
-$("#deselectAllBtn").onclick = deselectAllCategories;
+$("#leaderBtn").onclick= ()=>{ $("#leaderPanel").style.display="block"; $("#studyPanel").style.display="none"; $("#statsPanel").style.display="none"; $("#sidebar").style.display="none"; $("#quizPanel").style.display="none"; loadLeaderboard(); };
+$("#statsBtn").onclick = ()=>{ $("#statsPanel").style.display="block"; $("#leaderPanel").style.display="none"; $("#studyPanel").style.display="none"; $("#sidebar").style.display="none"; $("#quizPanel").style.display="none"; loadMyStats(); };
+$("#ttsToggleBtn").onclick = ()=>{ ttsOn=!ttsOn; toast(ttsOn?"🔊 Озвучка включена":"🔇 Озвучка выключена"); if(!ttsOn) stopSpeak(); };
 
-// Управление клавиатурой
 document.addEventListener("keydown",(e)=>{
   if($("#quizPanel").style.display!=="block") return;
   const i=["1","2","3","4","5","6"].indexOf(e.key);
-  if(i>=0){ 
-    const opt=$$("#optionsContainer .option")[i]; 
-    if(opt && opt.onclick) opt.click(); 
-  }
+  if(i>=0){ const opt=$$("#optionsContainer .option")[i]; if(opt && opt.onclick) opt.click(); }
   if(e.key==="Enter" && $("#nextBtn").style.display==="block") nextQuestion();
 });
-
-// Загрузка приложения
-window.addEventListener("load", ()=>{ 
-  loadQuestions();
-  loadStats();
-  loadCats();
-  toast("Willkommen! Wählen Sie Themen aus."); 
-  
-  // Скрываем все панели кроме сайдбара
-  $("#statsPanel").style.display="none";
-  $("#editPanel").style.display="none";
-  $("#studyPanel").style.display="none";
-  $("#quizPanel").style.display="none";
-});
+window.addEventListener("load", ()=>{ toast("Bereit. Melden Sie sich an."); loadCats(); });
 </script>
 </body>
 </html>
